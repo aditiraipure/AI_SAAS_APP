@@ -1,0 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
+@import "tailwindcss";
+
+* {
+  font-family: "Outfit", sans-serif;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: #111827;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@theme {
+  --color-primary: #5044e5;
+}
+.cl-drawerRoot {
+  z-index: 10;
+}
