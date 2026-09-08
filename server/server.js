@@ -13,8 +13,27 @@ const PORT = process.env.PORT || 5000;
 // Connect to QuickAI Database
 await connectDB();
 
-// Middlewares
-app.use(cors());
+// Dynamic CORS configuration for local Docker testing and production
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+  : ["http://localhost:3000", "http://localhost:5173", "http://localhost:5000"];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        !process.env.ALLOWED_ORIGINS ||
+        allowedOrigins.includes(origin) ||
+        allowedOrigins.includes("*")
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(clerkMiddleware());
 
@@ -36,7 +55,7 @@ app.use("/api/ai", aiRouter);
 // User & Creations Routes
 app.use("/api/user", userRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server is running on port ${PORT} (0.0.0.0)`);
   console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
 });

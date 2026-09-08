@@ -12,6 +12,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
+import { backendUrl } from "../utils/api";
 import { useUserPlan } from "../utils/plan";
 
 const ReviewResume = () => {
@@ -23,11 +24,6 @@ const ReviewResume = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000";
 
   const handleSubmit = async (e) => {
     e.preventDefault();

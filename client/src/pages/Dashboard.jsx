@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import CreationsItem from "../components/creationsItem";
+import { backendUrl } from "../utils/api";
 import { useUserPlan } from "../utils/plan";
 
 const Dashboard = () => {
@@ -19,11 +20,6 @@ const Dashboard = () => {
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000";
 
   const fetchCreations = useCallback(
     async (isManual = false) => {

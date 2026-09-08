@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { backendUrl } from "../utils/api";
 import { useUserPlan } from "../utils/plan";
 
 const RemoveBG = () => {
@@ -20,11 +21,6 @@ const RemoveBG = () => {
   const [processedImg, setProcessedImg] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000";
 
   const handleSubmit = async (e) => {
     e.preventDefault();

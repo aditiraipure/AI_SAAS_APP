@@ -10,6 +10,7 @@ import {
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { backendUrl } from "../utils/api";
 import { useUserPlan } from "../utils/plan";
 
 const styles = [
@@ -32,11 +33,6 @@ const GenerateImages = () => {
   const [generatedImg, setGeneratedImg] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000";
 
   const handleGenerate = async (e) => {
     e.preventDefault();

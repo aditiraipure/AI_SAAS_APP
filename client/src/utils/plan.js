@@ -1,5 +1,6 @@
 import { useAuth, useUser } from "@clerk/react";
 import { useCallback, useEffect, useState } from "react";
+import { backendUrl } from "./api";
 
 const listeners = new Set();
 let globalPlanState = {
@@ -106,11 +107,6 @@ export const useUserPlan = () => {
     isPremium:
       globalPlanState.isPremium || isPremiumUser(user, globalPlanState.plan),
   }));
-
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000";
 
   const fetchPlan = useCallback(async () => {
     if (!isSignedIn) {

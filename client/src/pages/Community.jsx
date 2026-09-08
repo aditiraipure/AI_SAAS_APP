@@ -2,6 +2,7 @@ import { useAuth, useUser } from "@clerk/react";
 import { AlertCircle, Heart, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { backendUrl } from "../utils/api";
 
 const Community = () => {
   const { getToken, isLoaded: isAuthLoaded } = useAuth();
@@ -11,11 +12,6 @@ const Community = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [likingIds, setLikingIds] = useState(new Set());
-
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000";
 
   const fetchPublished = useCallback(
     async (isManual = false) => {
