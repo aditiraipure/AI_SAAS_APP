@@ -47,11 +47,6 @@ const SKILL_CATEGORIES = [
     placeholder: "e.g. MongoDB, PostgreSQL, Redis",
   },
   {
-    key: "cloud",
-    label: "Cloud & Hosting",
-    placeholder: "e.g. AWS, Docker, Vercel",
-  },
-  {
     key: "devops",
     label: "DevOps & CI/CD",
     placeholder: "e.g. Git, GitHub Actions, Linux",
@@ -427,78 +422,331 @@ export const formatEducationGrade = (grade = "") => {
   return trimmed;
 };
 
+export const normalizeSkillText = (text = "") => {
+  if (!text || typeof text !== "string") return text;
+  const raw = text.trim();
+  const lower = raw
+    .toLowerCase()
+    .replace(/[-_.]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const collapsed = raw.toLowerCase().replace(/[^a-z0-9+#]/g, "");
+
+  const exactMap = {
+    react: "React.js",
+    reactjs: "React.js",
+    "react.js": "React.js",
+    "react js": "React.js",
+    "react native": "React Native",
+    reactnative: "React Native",
+    express: "Express.js",
+    expressjs: "Express.js",
+    "express.js": "Express.js",
+    "express js": "Express.js",
+    node: "Node.js",
+    nodejs: "Node.js",
+    "node.js": "Node.js",
+    "node js": "Node.js",
+    nest: "NestJS",
+    nestjs: "NestJS",
+    "nest.js": "NestJS",
+    "nest js": "NestJS",
+    next: "Next.js",
+    nextjs: "Next.js",
+    "next.js": "Next.js",
+    "next js": "Next.js",
+    vue: "Vue.js",
+    vuejs: "Vue.js",
+    "vue.js": "Vue.js",
+    "vue js": "Vue.js",
+    angular: "Angular",
+    angularjs: "AngularJS",
+    "angular.js": "AngularJS",
+    js: "JavaScript",
+    javascript: "JavaScript",
+    ts: "TypeScript",
+    typescript: "TypeScript",
+    mongo: "MongoDB",
+    mongodb: "MongoDB",
+    mongoose: "Mongoose",
+    postgres: "PostgreSQL",
+    postgresql: "PostgreSQL",
+    psql: "PostgreSQL",
+    mysql: "MySQL",
+    sqlite: "SQLite",
+    sqlite3: "SQLite",
+    redis: "Redis",
+    graphql: "GraphQL",
+    rest: "RESTful APIs",
+    "rest api": "RESTful APIs",
+    "rest apis": "RESTful APIs",
+    restapi: "RESTful APIs",
+    restapis: "RESTful APIs",
+    jwt: "JSON Web Tokens (JWT)",
+    "json web token": "JSON Web Tokens (JWT)",
+    "json web tokens": "JSON Web Tokens (JWT)",
+    docker: "Docker",
+    dockers: "Docker",
+    "docker compose": "Docker Compose",
+    "docker-compose": "Docker Compose",
+    k8s: "Kubernetes",
+    kubernetes: "Kubernetes",
+    aws: "AWS",
+    "amazon web services": "AWS",
+    gcp: "Google Cloud Platform (GCP)",
+    "google cloud": "Google Cloud Platform (GCP)",
+    "google cloud platform": "Google Cloud Platform (GCP)",
+    azure: "Microsoft Azure",
+    "microsoft azure": "Microsoft Azure",
+    "ci/cd": "CI/CD",
+    cicd: "CI/CD",
+    "ci cd": "CI/CD",
+    "ci cd pipelines": "CI/CD Pipelines",
+    html: "HTML5",
+    html5: "HTML5",
+    css: "CSS3",
+    css3: "CSS3",
+    tailwind: "Tailwind CSS",
+    tailwindcss: "Tailwind CSS",
+    "tailwind css": "Tailwind CSS",
+    bootstrap: "Bootstrap",
+    "bootstrap 5": "Bootstrap",
+    bootstrap5: "Bootstrap",
+    fastapi: "FastAPI",
+    "c++": "C++",
+    cpp: "C++",
+    "c#": "C#",
+    csharp: "C#",
+    golang: "Go",
+    go: "Go",
+    python: "Python",
+    python3: "Python",
+    py: "Python",
+    django: "Django",
+    flask: "Flask",
+    spring: "Spring Framework",
+    "spring boot": "Spring Boot",
+    springboot: "Spring Boot",
+    kafka: "Apache Kafka",
+    "apache kafka": "Apache Kafka",
+    rabbitmq: "RabbitMQ",
+    postman: "Postman",
+    swagger: "Swagger / OpenAPI",
+    openapi: "Swagger / OpenAPI",
+    git: "Git",
+    github: "GitHub",
+    gitlab: "GitLab",
+    bitbucket: "Bitbucket",
+    webpack: "Webpack",
+    vite: "Vite",
+    vitejs: "Vite",
+    "vite.js": "Vite",
+    babel: "Babel",
+    eslint: "ESLint",
+    prettier: "Prettier",
+    jest: "Jest",
+    mocha: "Mocha",
+    cypress: "Cypress",
+    playwright: "Playwright",
+    selenium: "Selenium",
+    figma: "Figma",
+    jira: "Jira",
+    scrum: "Scrum",
+    agile: "Agile",
+    "prompt engineering": "Prompt Engineering",
+    ai: "Artificial Intelligence",
+    "artificial intelligence": "Artificial Intelligence",
+    ml: "Machine Learning",
+    "machine learning": "Machine Learning",
+    nlp: "Natural Language Processing",
+    "natural language processing": "Natural Language Processing",
+    "deep learning": "Deep Learning",
+    redux: "Redux Toolkit",
+    "redux toolkit": "Redux Toolkit",
+    rtk: "Redux Toolkit",
+    zustand: "Zustand",
+    prisma: "Prisma ORM",
+    sequelize: "Sequelize",
+    typeorm: "TypeORM",
+    websocket: "WebSockets",
+    websockets: "WebSockets",
+    "web sockets": "WebSockets",
+    "socket.io": "Socket.IO",
+    socketio: "Socket.IO",
+    "socket io": "Socket.IO",
+    vercel: "Vercel",
+    netlify: "Netlify",
+    heroku: "Heroku",
+    linux: "Linux",
+    ubuntu: "Ubuntu",
+    nginx: "Nginx",
+    apache: "Apache HTTP Server",
+  };
+
+  if (exactMap[raw.toLowerCase()]) return exactMap[raw.toLowerCase()];
+  if (exactMap[lower]) return exactMap[lower];
+  if (exactMap[collapsed]) return exactMap[collapsed];
+
+  // Regex patterns
+  if (/^express(\.?js)?$/i.test(raw)) return "Express.js";
+  if (/^react(\.?js)?$/i.test(raw)) return "React.js";
+  if (/^node(\.?js)?$/i.test(raw)) return "Node.js";
+  if (/^nest(\.?js)?$/i.test(raw)) return "NestJS";
+  if (/^next(\.?js)?$/i.test(raw)) return "Next.js";
+  if (/^vue(\.?js)?$/i.test(raw)) return "Vue.js";
+  if (/^type\s*script$/i.test(raw)) return "TypeScript";
+  if (/^java\s*script$/i.test(raw)) return "JavaScript";
+  if (/^mongo\s*db$/i.test(raw)) return "MongoDB";
+  if (/^postgre\s*sql$/i.test(raw)) return "PostgreSQL";
+  if (/^tailwind(\s*css)?$/i.test(raw)) return "Tailwind CSS";
+  if (/^spring\s*boot$/i.test(raw)) return "Spring Boot";
+  if (/^k8s$/i.test(raw)) return "Kubernetes";
+
+  return raw;
+};
+
 const ResumeBuilder = () => {
   const { getToken } = useAuth();
   const { user } = useUser();
   const previewRef = useRef(null);
 
-  // Form State
+  // Form State with Default Test / Dummy Data
   const [personalInfo, setPersonalInfo] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    location: "",
-    linkedin: "",
-    github: "",
-    portfolio: "",
+    fullName: "Aditi Sharma",
+    email: "aditi.sharma.dev@gmail.com",
+    phone: "+91 98765 43210",
+    location: "Pune, Maharashtra, India",
+    linkedin: "https://www.linkedin.com/in/aditi-sharma",
+    github: "https://github.com/aditisharma",
+    portfolio: "https://aditisharma.dev",
   });
 
-  const [targetRole, setTargetRole] = useState("");
+  const [targetRole, setTargetRole] = useState("Software Developer");
   const [jobDescription, setJobDescription] = useState("");
-  const [summary, setSummary] = useState("");
+  const [summary, setSummary] = useState(
+    "Software Developer with experience building full-stack web applications using React.js, TypeScript, Node.js, NestJS, and MongoDB. Experienced in developing responsive user interfaces, RESTful APIs, database-driven applications, and secure authentication workflows. Worked on modular enterprise applications involving inventory, billing, delivery, customer management, and real-time communication features. Familiar with AI-assisted development, prompt engineering, API debugging, testing, Git, Docker, and Agile development practices.",
+  );
   const [selectedTemplate, setSelectedTemplate] = useState("modern");
 
   // Dynamic Array Sections
   const [education, setEducation] = useState([
     {
-      degree: "",
-      institution: "",
-      location: "",
-      startDate: "",
-      endDate: "",
-      grade: "",
+      degree:
+        "Bachelor of Engineering in Electronics & Telecommunication Engineering",
+      institution:
+        "Padmabhooshan Vasantdada Patil Institute of Technology (PVPIT)",
+      location: "Pune",
+      startDate: "2022-11",
+      endDate: "2026-06",
+      grade: "8.91",
       description: "",
     },
   ]);
 
   const [experience, setExperience] = useState([
     {
-      company: "",
-      role: "",
-      location: "",
+      company: "Nexoraa Technologies",
+      role: "Software Developer Intern",
+      location: "Pune, Maharashtra",
       employmentType: "Full-time",
-      startDate: "",
-      endDate: "",
+      startDate: "2026-01",
+      endDate: "2026-09",
       isCurrent: false,
-      responsibilitiesText: "",
+      responsibilitiesText: [
+        "React.js, TypeScript, responsive UI development",
+        "NestJS, REST APIs, backend development",
+        "MongoDB, Mongoose, database operations",
+        "API integration, validation, debugging, testing",
+        "Inventory, billing, delivery, and customer management modules",
+        "Git, GitHub, Docker, Vercel, Agile development",
+        "AI-assisted development and prompt engineering",
+      ].join("\n"),
       achievementsText: "",
-      technologiesText: "",
+      technologiesText:
+        "React.js, TypeScript, NestJS, Node.js, MongoDB, Docker, Git",
     },
   ]);
 
   const [projects, setProjects] = useState([
     {
-      name: "",
-      description: "",
-      technologiesText: "",
-      responsibilitiesText: "",
-      outcome: "",
-      githubUrl: "",
+      name: "PingUp - Social Media Application",
+      description:
+        "Social media application with user profiles, posts, likes, comments, follows, authentication, real-time chat, and notifications. Integrated Clerk for authentication and authorization. Implemented RESTful APIs and MongoDB-based data management with real-time communication using WebSockets.",
+      technologiesText:
+        "React.js, Node.js, Express.js, MongoDB, REST APIs, Clerk, WebSockets",
+      responsibilitiesText: [
+        "Social media application with user profiles, posts, likes, comments, follows, authentication, real-time chat, and notifications.",
+        "Integrated Clerk for authentication and authorization.",
+        "Implemented RESTful APIs and MongoDB-based data management with real-time communication using WebSockets.",
+      ].join("\n"),
+      outcome:
+        "Deployed responsive social application supporting real-time messaging.",
+      githubUrl: "https://github.com/aditisharma/pingup",
+      liveUrl: "https://pingup.aditisharma.dev",
+      startDate: "2026-06",
+      endDate: "2026-06",
+    },
+    {
+      name: "Redis-Inspired In-Memory Database Server",
+      description:
+        "Multithreaded TCP server inspired by Redis. Implemented key-value storage, TTL-based expiry, list operations, ordered event streams, and publish/subscribe messaging. Used ExecutorService and ConcurrentHashMap for concurrent client handling and thread-safe operations.",
+      technologiesText:
+        "Java, TCP, Socket Programming, ExecutorService, ConcurrentHashMap",
+      responsibilitiesText: [
+        "Multithreaded TCP server inspired by Redis.",
+        "Implemented key-value storage, TTL-based expiry, list operations, ordered event streams, and publish/subscribe messaging.",
+        "Used ExecutorService and ConcurrentHashMap for concurrent client handling and thread-safe operations.",
+      ].join("\n"),
+      outcome:
+        "Engineered scalable in-memory storage server with concurrent client support.",
+      githubUrl: "https://github.com/aditisharma/redis-server",
       liveUrl: "",
-      startDate: "",
-      endDate: "",
+      startDate: "2026-06",
+      endDate: "2026-06",
     },
   ]);
 
   const [skills, setSkills] = useState({
-    programming: [],
-    frontend: [],
-    backend: [],
-    database: [],
-    cloud: [],
-    devops: [],
-    tools: [],
-    other: [],
+    programming: [
+      "React.js",
+      "TypeScript",
+      "JavaScript",
+      "HTML",
+      "CSS",
+      "Node.js",
+      "Express.js",
+      "NestJS",
+      "Java",
+      "C++",
+    ],
+    frontend: ["React.js", "Tailwind CSS"],
+    backend: [
+      "Node.js",
+      "Express.js",
+      "NestJS",
+      "REST APIs",
+      "JWT",
+      "Clerk",
+      "WebSockets",
+    ],
+    database: ["MongoDB", "Mongoose"],
+    cloud: ["Vercel"],
+    devops: [
+      "Git",
+      "GitHub",
+      "Docker",
+      "Docker Compose",
+      "GitHub Actions",
+      "CI/CD",
+    ],
+    tools: ["Postman", "Swagger"],
+    other: [
+      "Prompt Engineering",
+      "Artificial Intelligence",
+      "English",
+      "Hindi",
+      "Marathi",
+    ],
   });
 
   const [skillInputs, setSkillInputs] = useState({
@@ -512,21 +760,62 @@ const ResumeBuilder = () => {
     other: "",
   });
 
-  const [achievements, setAchievements] = useState([]);
-  const [certifications, setCertifications] = useState([]);
+  const [achievements, setAchievements] = useState([
+    {
+      title: "Smart Helmet Accident Detection Research",
+      organization: "Research Publication",
+      date: "2025",
+      description:
+        "Published research paper on Smart Helmet-based accident detection and safety system.",
+    },
+    {
+      title: "Academic Excellence in BE",
+      organization: "PVPIT Pune",
+      date: "2024",
+      description: "Maintained 8.91 CGPA during Bachelor of Engineering.",
+    },
+    {
+      title: "Full Stack & Backend Projects",
+      organization: "Software Engineering",
+      date: "2026",
+      description:
+        "Developed multiple full-stack and backend projects using modern software development technologies.",
+    },
+  ]);
 
-  // UI Collapsible sections (all collapsed by default)
+  const [certifications, setCertifications] = useState([
+    {
+      name: "Full Stack Web Development Certification",
+      organization: "Meta",
+      issueDate: "2025-06",
+      credentialUrl: "",
+    },
+    {
+      name: "Java Programming Certification",
+      organization: "Oracle",
+      issueDate: "2025-08",
+      credentialUrl: "",
+    },
+    {
+      name: "MongoDB Developer Certification",
+      organization: "MongoDB University",
+      issueDate: "2025-11",
+      credentialUrl: "",
+    },
+  ]);
+
+  // UI Collapsible sections (open by default so user can immediately see and edit prefilled data)
   const [openSections, setOpenSections] = useState({
-    personal: false,
-    target: false,
-    summary: false,
-    education: false,
-    experience: false,
-    projects: false,
-    skills: false,
-    achievements: false,
-    certifications: false,
-    template: false,
+    personal: true,
+    target: true,
+    summary: true,
+    education: true,
+    experience: true,
+    projects: true,
+    skills: true,
+    achievements: true,
+    certifications: true,
+    template: true,
   });
 
   // Action states
@@ -561,15 +850,23 @@ const ResumeBuilder = () => {
     setOpenSections((prev) => ({ ...prev, [sec]: !prev[sec] }));
   };
 
-  // Skill Chip Management
-  const handleAddSkill = (category) => {
+  // Skill Chip Management with Instant Normalization + AI Verification
+  const handleAddSkill = async (category) => {
     const rawVal = skillInputs[category]?.trim();
     if (!rawVal) return;
 
-    const newItems = rawVal
+    // Fast deterministic normalization immediately
+    const rawItems = rawVal
       .split(",")
       .map((s) => s.trim())
-      .filter((s) => s.length > 0 && !skills[category].includes(s));
+      .filter((s) => s.length > 0);
+
+    const normalizedItems = rawItems.map((s) => normalizeSkillText(s));
+
+    // Deduplicate against existing skills
+    const newItems = normalizedItems.filter(
+      (s) => !skills[category].includes(s),
+    );
 
     if (newItems.length > 0) {
       setSkills((prev) => ({
@@ -579,6 +876,41 @@ const ResumeBuilder = () => {
     }
 
     setSkillInputs((prev) => ({ ...prev, [category]: "" }));
+
+    // For any item, verify with AI normalization in the background if not standard
+    for (const item of newItems) {
+      if (item.length > 1) {
+        try {
+          const token = await getToken();
+          const res = await fetch(`${backendUrl}/api/resumes/normalize-skill`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              text: item,
+              context: `${category} skill`,
+            }),
+          });
+          const data = await res.json();
+          if (
+            data?.success &&
+            data.normalizedSkill &&
+            data.normalizedSkill !== item
+          ) {
+            setSkills((prev) => ({
+              ...prev,
+              [category]: prev[category].map((s) =>
+                s === item ? data.normalizedSkill : s,
+              ),
+            }));
+          }
+        } catch {
+          // ignore background error
+        }
+      }
+    }
   };
 
   const handleRemoveSkill = (category, indexToRemove) => {
@@ -595,6 +927,61 @@ const ResumeBuilder = () => {
     }
   };
 
+  // Education Abbreviation Expansion on blur
+  const handleExpandEducationField = async (index, field, value) => {
+    if (!value || typeof value !== "string" || !value.trim()) return;
+    const cleanVal = value.trim();
+
+    // Fast deterministic check first
+    const fastExpanded =
+      field === "degree"
+        ? expandEducationDegree(cleanVal)
+        : expandEducationInstitution(cleanVal);
+
+    if (fastExpanded && fastExpanded !== cleanVal) {
+      updateEducation(index, field, fastExpanded);
+      return;
+    }
+
+    // Call AI expander for abbreviations
+    if (
+      /^[A-Z&. -]{2,14}$/i.test(cleanVal) ||
+      cleanVal.split(" ").length <= 4
+    ) {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `${backendUrl}/api/resumes/expand-abbreviation`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              text: cleanVal,
+              context:
+                field === "degree"
+                  ? "degree / course qualification"
+                  : "college / university / institution",
+              location: personalInfo.location || "India",
+            }),
+          },
+        );
+        const data = await res.json();
+        if (
+          data?.success &&
+          data.expandedText &&
+          data.expandedText !== cleanVal
+        ) {
+          updateEducation(index, field, data.expandedText);
+        }
+      } catch {
+        // ignore background error
+      }
+    }
+  };
+
   // Dynamic Array Handlers
   const addEducation = () => {
     setEducation((prev) => [
@@ -606,7 +993,6 @@ const ResumeBuilder = () => {
         startDate: "",
         endDate: "",
         grade: "",
-        description: "",
       },
     ]);
   };
@@ -621,7 +1007,6 @@ const ResumeBuilder = () => {
           startDate: "",
           endDate: "",
           grade: "",
-          description: "",
         },
       ]);
       return;
@@ -644,13 +1029,11 @@ const ResumeBuilder = () => {
         company: "",
         role: "",
         location: "",
-        employmentType: "Full-time",
         startDate: "",
         endDate: "",
         isCurrent: false,
         responsibilitiesText: "",
         achievementsText: "",
-        technologiesText: "",
       },
     ]);
   };
@@ -1765,6 +2148,13 @@ const ResumeBuilder = () => {
                         onChange={(e) =>
                           updateEducation(index, "degree", e.target.value)
                         }
+                        onBlur={(e) =>
+                          handleExpandEducationField(
+                            index,
+                            "degree",
+                            e.target.value,
+                          )
+                        }
                         className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs bg-white focus:outline-hidden focus:border-indigo-500"
                       />
                     </div>
@@ -1778,6 +2168,13 @@ const ResumeBuilder = () => {
                         value={edu.institution}
                         onChange={(e) =>
                           updateEducation(index, "institution", e.target.value)
+                        }
+                        onBlur={(e) =>
+                          handleExpandEducationField(
+                            index,
+                            "institution",
+                            e.target.value,
+                          )
                         }
                         className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs bg-white focus:outline-hidden focus:border-indigo-500"
                       />
@@ -1998,7 +2395,7 @@ const ResumeBuilder = () => {
                     </div>
                     <textarea
                       rows={3}
-                      placeholder="• Built REST APIs with Express and Node.js serving 10k+ requests&#10;• Reduced latency by 25% through MongoDB query indexing"
+                      placeholder="Enter bullets here"
                       value={exp.responsibilitiesText}
                       onChange={(e) =>
                         updateExperience(
@@ -2611,559 +3008,85 @@ const ResumeBuilder = () => {
       </form>
 
       {/* ========================================================================= */}
-      {/* LIVE RESUME PREVIEW SECTION */}
+      {/* LIVE RESUME PREVIEW SECTION - Hidden until resume is created */}
       {/* ========================================================================= */}
-      <section ref={previewRef} className="space-y-6 pt-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-gray-200">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
-                <FileText className="size-5" />
-              </span>
-              <h2 className="text-xl font-bold text-gray-900">
-                Live Resume Preview
-              </h2>
+      {savedResume && (
+        <section ref={previewRef} className="space-y-6 pt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-gray-200">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
+                  <FileText className="size-5" />
+                </span>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Live Resume Preview
+                </h2>
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Styled using the{" "}
+                <strong>
+                  {TEMPLATES.find((t) => t.id === selectedTemplate)?.name}
+                </strong>{" "}
+                template.
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Styled using the{" "}
-              <strong>
-                {TEMPLATES.find((t) => t.id === selectedTemplate)?.name}
-              </strong>{" "}
-              template.
-            </p>
-          </div>
 
-          {/* Action Toolbar */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {savedResume && (
-              <>
-                <button
-                  type="button"
-                  onClick={handleAiGenerateAll}
-                  disabled={aiGeneratingAll}
-                  className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Enhance experience and project bullet points with AI"
-                >
-                  {aiGeneratingAll ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="size-3.5" />
-                  )}
-                  <span>AI Polish All</span>
-                </button>
-
-                {jobDescription && (
+            {/* Action Toolbar */}
+            <div className="flex flex-wrap items-center gap-2.5">
+              {savedResume && (
+                <>
                   <button
                     type="button"
-                    onClick={handleAtsAnalysis}
-                    disabled={atsAnalyzing}
-                    className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    onClick={handleAiGenerateAll}
+                    disabled={aiGeneratingAll}
+                    className="px-3.5 py-2 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    title="Enhance experience and project bullet points with AI"
                   >
-                    {atsAnalyzing ? (
+                    {aiGeneratingAll ? (
                       <Loader2 className="size-3.5 animate-spin" />
                     ) : (
-                      <Target className="size-3.5" />
+                      <Sparkles className="size-3.5" />
                     )}
-                    <span>ATS Scan</span>
+                    <span>AI Polish All</span>
                   </button>
-                )}
 
-                <button
-                  type="button"
-                  onClick={handleDownloadDocx}
-                  disabled={downloadingDocx}
-                  className="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  {downloadingDocx ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <Download className="size-3.5" />
+                  {jobDescription && (
+                    <button
+                      type="button"
+                      onClick={handleAtsAnalysis}
+                      disabled={atsAnalyzing}
+                      className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {atsAnalyzing ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <Target className="size-3.5" />
+                      )}
+                      <span>ATS Scan</span>
+                    </button>
                   )}
-                  <span>DOCX</span>
-                </button>
-              </>
-            )}
 
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              disabled={downloadingPdf}
-              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
-            >
-              {downloadingPdf ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Download className="size-4" />
-              )}
-              <span>Download PDF</span>
-            </button>
-          </div>
-        </div>
-
-        {/* ATS Score Notification Widget if analyzed */}
-        {savedResume?.atsAnalysis?.score > 0 && (
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="w-12 h-12 rounded-xl bg-emerald-600 text-white font-bold text-lg flex items-center justify-center shrink-0">
-                {savedResume.atsAnalysis.score}
-              </span>
-              <div>
-                <h4 className="text-sm font-bold text-emerald-900">
-                  ATS Match Score: {savedResume.atsAnalysis.score}/100
-                </h4>
-                <p className="text-xs text-emerald-700 mt-0.5">
-                  Matched keywords:{" "}
-                  {savedResume.atsAnalysis.matchedKeywords
-                    ?.slice(0, 5)
-                    .join(", ") || "Strong match"}
-                </p>
-              </div>
-            </div>
-            {savedResume.atsAnalysis.missingKeywords?.length > 0 && (
-              <span className="text-[11px] text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-md">
-                Missing:{" "}
-                {savedResume.atsAnalysis.missingKeywords.slice(0, 3).join(", ")}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Visual Document Canvas */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-8 sm:p-12 max-w-4xl mx-auto min-h-[700px] text-gray-800">
-          {/* Header */}
-          <div
-            className={`pb-4 border-b ${
-              selectedTemplate === "modern"
-                ? "border-indigo-500"
-                : selectedTemplate === "classic"
-                  ? "border-gray-800 text-center"
-                  : selectedTemplate === "professional"
-                    ? "border-teal-600"
-                    : "border-gray-200"
-            }`}
-          >
-            <h1
-              className={`text-2xl sm:text-3xl font-bold tracking-tight ${
-                selectedTemplate === "modern"
-                  ? "text-indigo-600"
-                  : selectedTemplate === "classic"
-                    ? "text-gray-900 font-serif"
-                    : selectedTemplate === "professional"
-                      ? "text-slate-900"
-                      : "text-gray-900"
-              }`}
-            >
-              {currentPreview.personalInfo?.fullName || "Your Full Name"}
-            </h1>
-            <p className="text-base font-semibold text-gray-600 mt-1">
-              {currentPreview.targetRole || "Target Job Title"}
-            </p>
-
-            {/* Contact details */}
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-2.5">
-              {currentPreview.personalInfo?.email && (
-                <span>{currentPreview.personalInfo.email}</span>
-              )}
-              {currentPreview.personalInfo?.phone && (
-                <span>• {currentPreview.personalInfo.phone}</span>
-              )}
-              {currentPreview.personalInfo?.location && (
-                <span>• {currentPreview.personalInfo.location}</span>
-              )}
-              {currentPreview.personalInfo?.linkedin && (
-                <span>
-                  •{" "}
-                  <a
-                    href={currentPreview.personalInfo.linkedin}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-indigo-600 hover:underline"
+                  <button
+                    type="button"
+                    onClick={handleDownloadDocx}
+                    disabled={downloadingDocx}
+                    className="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    LinkedIn
-                  </a>
-                </span>
-              )}
-              {currentPreview.personalInfo?.github && (
-                <span>
-                  •{" "}
-                  <a
-                    href={currentPreview.personalInfo.github}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-indigo-600 hover:underline"
-                  >
-                    GitHub
-                  </a>
-                </span>
-              )}
-              {currentPreview.personalInfo?.portfolio && (
-                <span>
-                  •{" "}
-                  <a
-                    href={currentPreview.personalInfo.portfolio}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-indigo-600 hover:underline"
-                  >
-                    Portfolio
-                  </a>
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Resume Sections Body */}
-          <div className="space-y-6 mt-6 text-sm">
-            {/* Summary */}
-            {currentPreview.summary && (
-              <div>
-                <h3
-                  className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b ${
-                    selectedTemplate === "modern"
-                      ? "text-indigo-600 border-indigo-100"
-                      : selectedTemplate === "classic"
-                        ? "text-gray-800 border-gray-300 font-serif"
-                        : selectedTemplate === "professional"
-                          ? "text-teal-700 border-teal-100"
-                          : "text-gray-700 border-gray-150"
-                  }`}
-                >
-                  Professional Summary
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
-                  {currentPreview.summary}
-                </p>
-              </div>
-            )}
-
-            {/* Experience */}
-            {currentPreview.experience?.length > 0 && (
-              <div>
-                <h3
-                  className={`text-xs font-bold uppercase tracking-wider pb-1 mb-3 border-b ${
-                    selectedTemplate === "modern"
-                      ? "text-indigo-600 border-indigo-100"
-                      : selectedTemplate === "classic"
-                        ? "text-gray-800 border-gray-300 font-serif"
-                        : selectedTemplate === "professional"
-                          ? "text-teal-700 border-teal-100"
-                          : "text-gray-700 border-gray-150"
-                  }`}
-                >
-                  Experience
-                </h3>
-                <div className="space-y-4">
-                  {currentPreview.experience.map((exp, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm">
-                        <span className="font-bold text-gray-900">
-                          {exp.role || "Role"}{" "}
-                          <span className="font-medium text-gray-500">
-                            at {exp.company || "Company"}
-                          </span>
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatResumeDate(exp.startDate)} –{" "}
-                          {exp.isCurrent
-                            ? "Present"
-                            : formatResumeDate(exp.endDate) || "Present"}{" "}
-                          {exp.location && `| ${exp.location}`}
-                        </span>
-                      </div>
-
-                      {/* Responsibilities */}
-                      {exp.responsibilities?.length > 0 && (
-                        <ul className="list-disc list-inside space-y-1 text-xs text-gray-700 pl-1 mt-1">
-                          {exp.responsibilities.map((resp, rIdx) => (
-                            <li key={rIdx} className="leading-relaxed">
-                              {resp}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {/* Technologies */}
-                      {exp.technologies?.length > 0 && (
-                        <p className="text-[11px] text-gray-500 pt-0.5">
-                          <strong className="text-gray-600">Tech:</strong>{" "}
-                          {exp.technologies.join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Projects */}
-            {currentPreview.projects?.length > 0 && (
-              <div>
-                <h3
-                  className={`text-xs font-bold uppercase tracking-wider pb-1 mb-3 border-b ${
-                    selectedTemplate === "modern"
-                      ? "text-indigo-600 border-indigo-100"
-                      : selectedTemplate === "classic"
-                        ? "text-gray-800 border-gray-300 font-serif"
-                        : selectedTemplate === "professional"
-                          ? "text-teal-700 border-teal-100"
-                          : "text-gray-700 border-gray-150"
-                  }`}
-                >
-                  Projects
-                </h3>
-                <div className="space-y-3">
-                  {currentPreview.projects.map((proj, idx) => {
-                    const dateRange = [
-                      formatResumeDate(proj.startDate),
-                      formatResumeDate(proj.endDate),
-                    ]
-                      .filter(Boolean)
-                      .join(" – ");
-                    return (
-                      <div key={idx} className="space-y-1">
-                        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 text-xs sm:text-sm">
-                          <div className="flex flex-wrap items-baseline gap-x-2">
-                            <span className="font-bold text-gray-900">
-                              {proj.name}
-                            </span>
-                            {proj.technologies?.length > 0 && (
-                              <span className="text-xs text-gray-500 font-medium">
-                                | {proj.technologies.join(", ")}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 text-xs shrink-0">
-                            {dateRange && (
-                              <span className="text-gray-500">{dateRange}</span>
-                            )}
-                            {proj.githubUrl && (
-                              <a
-                                href={proj.githubUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-indigo-600 hover:underline"
-                              >
-                                GitHub
-                              </a>
-                            )}
-                            {proj.liveUrl && (
-                              <a
-                                href={proj.liveUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-indigo-600 hover:underline"
-                              >
-                                Demo
-                              </a>
-                            )}
-                          </div>
-                        </div>
-
-                        {proj.responsibilities?.length > 0 ? (
-                          <ul className="list-disc list-inside space-y-1 text-xs text-gray-700 pl-1">
-                            {proj.responsibilities.map((r, rIdx) => (
-                              <li key={rIdx} className="leading-relaxed">
-                                {r}
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          proj.description && (
-                            <p className="text-xs text-gray-700 leading-relaxed">
-                              {proj.description}
-                            </p>
-                          )
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Education */}
-            {currentPreview.education?.length > 0 && (
-              <div>
-                <h3
-                  className={`text-xs font-bold uppercase tracking-wider pb-1 mb-3 border-b ${
-                    selectedTemplate === "modern"
-                      ? "text-indigo-600 border-indigo-100"
-                      : selectedTemplate === "classic"
-                        ? "text-gray-800 border-gray-300 font-serif"
-                        : selectedTemplate === "professional"
-                          ? "text-teal-700 border-teal-100"
-                          : "text-gray-700 border-gray-150"
-                  }`}
-                >
-                  Education
-                </h3>
-                <div className="space-y-3">
-                  {currentPreview.education.map((edu, idx) => {
-                    const expandedDegree =
-                      expandEducationDegree(edu.degree) || edu.degree;
-                    const expandedInstitution =
-                      expandEducationInstitution(edu.institution) ||
-                      edu.institution;
-                    const formattedGrade = formatEducationGrade(edu.grade);
-                    const dateRange = [
-                      formatResumeDate(edu.startDate),
-                      formatResumeDate(edu.endDate),
-                    ]
-                      .filter(Boolean)
-                      .join(" – ");
-
-                    return (
-                      <div key={idx} className="space-y-0.5 text-xs sm:text-sm">
-                        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
-                          <div className="font-bold text-gray-900 uppercase tracking-wide">
-                            {expandedInstitution}
-                            {edu.location && (
-                              <span className="font-semibold text-gray-600 normal-case">
-                                , {edu.location}
-                              </span>
-                            )}
-                          </div>
-                          {dateRange && (
-                            <span className="text-xs text-gray-500 shrink-0 font-medium">
-                              {dateRange}
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-gray-700 text-xs sm:text-sm">
-                          <span>{expandedDegree}</span>
-                          {formattedGrade && (
-                            <span className="text-gray-600 font-medium">
-                              {" "}
-                              ({formattedGrade})
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Skills */}
-            {currentPreview.skills &&
-              Object.values(currentPreview.skills).some(
-                (arr) => arr?.length > 0,
-              ) && (
-                <div>
-                  <h3
-                    className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2.5 border-b ${
-                      selectedTemplate === "modern"
-                        ? "text-indigo-600 border-indigo-100"
-                        : selectedTemplate === "classic"
-                          ? "text-gray-800 border-gray-300 font-serif"
-                          : selectedTemplate === "professional"
-                            ? "text-teal-700 border-teal-100"
-                            : "text-gray-700 border-gray-150"
-                    }`}
-                  >
-                    Skills
-                  </h3>
-                  <div className="space-y-1.5 text-xs text-gray-700">
-                    {SKILL_CATEGORIES.map((cat) => {
-                      const skillList = currentPreview.skills[cat.key];
-                      if (!skillList || skillList.length === 0) return null;
-                      return (
-                        <div
-                          key={cat.key}
-                          className="flex flex-col sm:flex-row sm:items-baseline gap-1"
-                        >
-                          <span className="font-semibold text-gray-900 min-w-36">
-                            {cat.label}:
-                          </span>
-                          <span>{skillList.join(", ")}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                    {downloadingDocx ? (
+                      <Loader2 className="size-3.5 animate-spin" />
+                    ) : (
+                      <Download className="size-3.5" />
+                    )}
+                    <span>DOCX</span>
+                  </button>
+                </>
               )}
 
-            {/* Achievements & Certifications */}
-            {(currentPreview.achievements?.length > 0 ||
-              currentPreview.certifications?.length > 0) && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                {currentPreview.achievements?.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b ${
-                        selectedTemplate === "modern"
-                          ? "text-indigo-600 border-indigo-100"
-                          : selectedTemplate === "classic"
-                            ? "text-gray-800 border-gray-300 font-serif"
-                            : selectedTemplate === "professional"
-                              ? "text-teal-700 border-teal-100"
-                              : "text-gray-700 border-gray-150"
-                      }`}
-                    >
-                      Achievements
-                    </h3>
-                    <ul className="list-disc list-inside space-y-1 text-xs text-gray-700">
-                      {currentPreview.achievements.map((ach, idx) => (
-                        <li key={idx}>
-                          <strong>{ach.title}</strong>{" "}
-                          {ach.organization && `(${ach.organization})`}{" "}
-                          {ach.date && (
-                            <span className="text-gray-500">
-                              • {formatResumeDate(ach.date)}
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {currentPreview.certifications?.length > 0 && (
-                  <div>
-                    <h3
-                      className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b ${
-                        selectedTemplate === "modern"
-                          ? "text-indigo-600 border-indigo-100"
-                          : selectedTemplate === "classic"
-                            ? "text-gray-800 border-gray-300 font-serif"
-                            : selectedTemplate === "professional"
-                              ? "text-teal-700 border-teal-100"
-                              : "text-gray-700 border-gray-150"
-                      }`}
-                    >
-                      Certifications
-                    </h3>
-                    <ul className="list-disc list-inside space-y-1 text-xs text-gray-700">
-                      {currentPreview.certifications.map((cert, idx) => (
-                        <li key={idx}>
-                          <strong>{cert.name}</strong>{" "}
-                          {cert.organization && `— ${cert.organization}`}{" "}
-                          {cert.issueDate && (
-                            <span className="text-gray-500">
-                              ({formatResumeDate(cert.issueDate)})
-                            </span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Bottom Download Bar */}
-          <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <span className="text-xs text-gray-400">
-              Generated with QuickAI Resume Builder
-            </span>
-            <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={downloadingPdf}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white font-semibold text-xs shadow-md hover:opacity-95 transition-all flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
               >
                 {downloadingPdf ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -3174,8 +3097,489 @@ const ResumeBuilder = () => {
               </button>
             </div>
           </div>
-        </div>
-      </section>
+
+          {/* ATS Score Notification Widget if analyzed */}
+          {savedResume?.atsAnalysis?.score > 0 && (
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="w-12 h-12 rounded-xl bg-emerald-600 text-white font-bold text-lg flex items-center justify-center shrink-0">
+                  {savedResume.atsAnalysis.score}
+                </span>
+                <div>
+                  <h4 className="text-sm font-bold text-emerald-900">
+                    ATS Match Score: {savedResume.atsAnalysis.score}/100
+                  </h4>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    Matched keywords:{" "}
+                    {savedResume.atsAnalysis.matchedKeywords
+                      ?.slice(0, 5)
+                      .join(", ") || "Strong match"}
+                  </p>
+                </div>
+              </div>
+              {savedResume.atsAnalysis.missingKeywords?.length > 0 && (
+                <span className="text-[11px] text-emerald-800 bg-emerald-100/80 px-2.5 py-1 rounded-md">
+                  Missing:{" "}
+                  {savedResume.atsAnalysis.missingKeywords
+                    .slice(0, 3)
+                    .join(", ")}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Visual Document Canvas */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-8 sm:p-12 max-w-4xl mx-auto min-h-[700px] text-gray-800">
+            {/* Header */}
+            <div
+              className={`pb-4 border-b ${
+                selectedTemplate === "modern"
+                  ? "border-indigo-500"
+                  : selectedTemplate === "classic"
+                    ? "border-gray-800 text-center"
+                    : selectedTemplate === "professional"
+                      ? "border-teal-600"
+                      : "border-gray-200"
+              }`}
+            >
+              <h1
+                className={`text-2xl sm:text-3xl font-bold tracking-tight ${
+                  selectedTemplate === "modern"
+                    ? "text-indigo-600"
+                    : selectedTemplate === "classic"
+                      ? "text-gray-900 font-serif"
+                      : selectedTemplate === "professional"
+                        ? "text-slate-900"
+                        : "text-gray-900"
+                }`}
+              >
+                {currentPreview.personalInfo?.fullName || "Your Full Name"}
+              </h1>
+              <p className="text-base font-semibold text-gray-600 mt-1">
+                {currentPreview.targetRole || "Target Job Title"}
+              </p>
+
+              {/* Contact details */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 mt-2.5">
+                {currentPreview.personalInfo?.email && (
+                  <span>{currentPreview.personalInfo.email}</span>
+                )}
+                {currentPreview.personalInfo?.phone && (
+                  <span>• {currentPreview.personalInfo.phone}</span>
+                )}
+                {currentPreview.personalInfo?.location && (
+                  <span>• {currentPreview.personalInfo.location}</span>
+                )}
+                {currentPreview.personalInfo?.linkedin && (
+                  <span>
+                    •{" "}
+                    <a
+                      href={currentPreview.personalInfo.linkedin}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      LinkedIn
+                    </a>
+                  </span>
+                )}
+                {currentPreview.personalInfo?.github && (
+                  <span>
+                    •{" "}
+                    <a
+                      href={currentPreview.personalInfo.github}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      GitHub
+                    </a>
+                  </span>
+                )}
+                {currentPreview.personalInfo?.portfolio && (
+                  <span>
+                    •{" "}
+                    <a
+                      href={currentPreview.personalInfo.portfolio}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      Portfolio
+                    </a>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Resume Sections Body */}
+            <div className="space-y-6 mt-6 text-sm">
+              {/* Summary */}
+              {currentPreview.summary && (
+                <div>
+                  <h3
+                    className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b ${
+                      selectedTemplate === "modern"
+                        ? "text-indigo-600 border-indigo-100"
+                        : selectedTemplate === "classic"
+                          ? "text-gray-800 border-gray-300 font-serif"
+                          : selectedTemplate === "professional"
+                            ? "text-teal-700 border-teal-100"
+                            : "text-gray-700 border-gray-150"
+                    }`}
+                  >
+                    Professional Summary
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                    {currentPreview.summary}
+                  </p>
+                </div>
+              )}
+
+              {/* Experience */}
+              {currentPreview.experience?.length > 0 && (
+                <div>
+                  <h3
+                    className={`text-xs font-bold uppercase tracking-wider pb-1 mb-3 border-b ${
+                      selectedTemplate === "modern"
+                        ? "text-indigo-600 border-indigo-100"
+                        : selectedTemplate === "classic"
+                          ? "text-gray-800 border-gray-300 font-serif"
+                          : selectedTemplate === "professional"
+                            ? "text-teal-700 border-teal-100"
+                            : "text-gray-700 border-gray-150"
+                    }`}
+                  >
+                    Experience
+                  </h3>
+                  <div className="space-y-4">
+                    {currentPreview.experience.map((exp, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs sm:text-sm">
+                          <span className="text-gray-900">
+                            <strong className="font-bold text-gray-900">
+                              {exp.company || "Company"}
+                            </strong>
+                            <span className="font-normal text-gray-500">
+                              {" "}
+                              -{" "}
+                            </span>
+                            <strong className="font-bold text-gray-900">
+                              {exp.role || "Role"}
+                            </strong>
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {formatResumeDate(exp.startDate)} –{" "}
+                            {exp.isCurrent
+                              ? "Present"
+                              : formatResumeDate(exp.endDate) || "Present"}{" "}
+                            {exp.location && `| ${exp.location}`}
+                          </span>
+                        </div>
+
+                        {/* Responsibilities */}
+                        {exp.responsibilities?.length > 0 && (
+                          <ul className="list-disc list-inside space-y-1 text-xs text-gray-700 pl-1 mt-1">
+                            {exp.responsibilities.map((resp, rIdx) => (
+                              <li key={rIdx} className="leading-relaxed">
+                                {resp}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Projects */}
+              {currentPreview.projects?.length > 0 && (
+                <div>
+                  <h3
+                    className={`text-xs font-bold uppercase tracking-wider pb-1 mb-3 border-b ${
+                      selectedTemplate === "modern"
+                        ? "text-indigo-600 border-indigo-100"
+                        : selectedTemplate === "classic"
+                          ? "text-gray-800 border-gray-300 font-serif"
+                          : selectedTemplate === "professional"
+                            ? "text-teal-700 border-teal-100"
+                            : "text-gray-700 border-gray-150"
+                    }`}
+                  >
+                    Projects
+                  </h3>
+                  <div className="space-y-3">
+                    {currentPreview.projects.map((proj, idx) => {
+                      const dateRange = [
+                        formatResumeDate(proj.startDate),
+                        formatResumeDate(proj.endDate),
+                      ]
+                        .filter(Boolean)
+                        .join(" – ");
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 text-xs sm:text-sm">
+                            <div className="flex flex-wrap items-baseline gap-x-2">
+                              <span className="font-bold text-gray-900">
+                                {proj.name}
+                              </span>
+                              {proj.technologies?.length > 0 && (
+                                <span className="text-xs text-gray-500 font-medium">
+                                  | {proj.technologies.join(", ")}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs shrink-0">
+                              {dateRange && (
+                                <span className="text-gray-500">
+                                  {dateRange}
+                                </span>
+                              )}
+                              {proj.githubUrl && (
+                                <a
+                                  href={proj.githubUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-indigo-600 hover:underline"
+                                >
+                                  GitHub
+                                </a>
+                              )}
+                              {proj.liveUrl && (
+                                <a
+                                  href={proj.liveUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-indigo-600 hover:underline"
+                                >
+                                  Demo
+                                </a>
+                              )}
+                            </div>
+                          </div>
+
+                          {proj.responsibilities?.length > 0 ? (
+                            <ul className="list-disc list-inside space-y-1 text-xs text-gray-700 pl-1">
+                              {proj.responsibilities.map((r, rIdx) => (
+                                <li key={rIdx} className="leading-relaxed">
+                                  {r}
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            proj.description && (
+                              <p className="text-xs text-gray-700 leading-relaxed">
+                                {proj.description}
+                              </p>
+                            )
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Education */}
+              {currentPreview.education?.length > 0 && (
+                <div>
+                  <h3
+                    className={`text-xs font-bold uppercase tracking-wider pb-1 mb-3 border-b ${
+                      selectedTemplate === "modern"
+                        ? "text-indigo-600 border-indigo-100"
+                        : selectedTemplate === "classic"
+                          ? "text-gray-800 border-gray-300 font-serif"
+                          : selectedTemplate === "professional"
+                            ? "text-teal-700 border-teal-100"
+                            : "text-gray-700 border-gray-150"
+                    }`}
+                  >
+                    Education
+                  </h3>
+                  <div className="space-y-3">
+                    {currentPreview.education.map((edu, idx) => {
+                      const expandedDegree =
+                        expandEducationDegree(edu.degree) || edu.degree;
+                      const expandedInstitution =
+                        expandEducationInstitution(edu.institution) ||
+                        edu.institution;
+                      const formattedGrade = formatEducationGrade(edu.grade);
+                      const dateRange = [
+                        formatResumeDate(edu.startDate),
+                        formatResumeDate(edu.endDate),
+                      ]
+                        .filter(Boolean)
+                        .join(" – ");
+
+                      return (
+                        <div
+                          key={idx}
+                          className="space-y-0.5 text-xs sm:text-sm"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                            <div className="font-bold text-gray-900 uppercase tracking-wide">
+                              {expandedInstitution}
+                              {edu.location && (
+                                <span className="font-semibold text-gray-600 normal-case">
+                                  , {edu.location}
+                                </span>
+                              )}
+                            </div>
+                            {dateRange && (
+                              <span className="text-xs text-gray-500 shrink-0 font-medium">
+                                {dateRange}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-gray-700 text-xs sm:text-sm">
+                            <span>{expandedDegree}</span>
+                            {formattedGrade && (
+                              <span className="text-gray-600 font-medium">
+                                {" "}
+                                ({formattedGrade})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Skills */}
+              {currentPreview.skills &&
+                Object.values(currentPreview.skills).some(
+                  (arr) => arr?.length > 0,
+                ) && (
+                  <div>
+                    <h3
+                      className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2.5 border-b ${
+                        selectedTemplate === "modern"
+                          ? "text-indigo-600 border-indigo-100"
+                          : selectedTemplate === "classic"
+                            ? "text-gray-800 border-gray-300 font-serif"
+                            : selectedTemplate === "professional"
+                              ? "text-teal-700 border-teal-100"
+                              : "text-gray-700 border-gray-150"
+                      }`}
+                    >
+                      Skills
+                    </h3>
+                    <div className="space-y-1.5 text-xs text-gray-700">
+                      {SKILL_CATEGORIES.map((cat) => {
+                        const skillList = currentPreview.skills[cat.key];
+                        if (!skillList || skillList.length === 0) return null;
+                        return (
+                          <div
+                            key={cat.key}
+                            className="flex flex-col sm:flex-row sm:items-baseline gap-1"
+                          >
+                            <span className="font-semibold text-gray-900 min-w-36">
+                              {cat.label}:
+                            </span>
+                            <span>{skillList.join(", ")}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+              {/* Achievements & Certifications */}
+              {(currentPreview.achievements?.length > 0 ||
+                currentPreview.certifications?.length > 0) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                  {currentPreview.achievements?.length > 0 && (
+                    <div>
+                      <h3
+                        className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b ${
+                          selectedTemplate === "modern"
+                            ? "text-indigo-600 border-indigo-100"
+                            : selectedTemplate === "classic"
+                              ? "text-gray-800 border-gray-300 font-serif"
+                              : selectedTemplate === "professional"
+                                ? "text-teal-700 border-teal-100"
+                                : "text-gray-700 border-gray-150"
+                        }`}
+                      >
+                        Achievements
+                      </h3>
+                      <ul className="list-disc list-inside space-y-1 text-xs text-gray-700">
+                        {currentPreview.achievements.map((ach, idx) => (
+                          <li key={idx}>
+                            <strong>{ach.title}</strong>{" "}
+                            {ach.organization && `(${ach.organization})`}{" "}
+                            {ach.date && (
+                              <span className="text-gray-500">
+                                • {formatResumeDate(ach.date)}
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {currentPreview.certifications?.length > 0 && (
+                    <div>
+                      <h3
+                        className={`text-xs font-bold uppercase tracking-wider pb-1 mb-2 border-b ${
+                          selectedTemplate === "modern"
+                            ? "text-indigo-600 border-indigo-100"
+                            : selectedTemplate === "classic"
+                              ? "text-gray-800 border-gray-300 font-serif"
+                              : selectedTemplate === "professional"
+                                ? "text-teal-700 border-teal-100"
+                                : "text-gray-700 border-gray-150"
+                        }`}
+                      >
+                        Certifications
+                      </h3>
+                      <ul className="list-disc list-inside space-y-1 text-xs text-gray-700">
+                        {currentPreview.certifications.map((cert, idx) => (
+                          <li key={idx}>
+                            <strong>{cert.name}</strong>{" "}
+                            {cert.organization && `— ${cert.organization}`}{" "}
+                            {cert.issueDate && (
+                              <span className="text-gray-500">
+                                ({formatResumeDate(cert.issueDate)})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Download Bar */}
+            <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <span className="text-xs text-gray-400">
+                Generated with QuickAI Resume Builder
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleDownloadPdf}
+                  disabled={downloadingPdf}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white font-semibold text-xs shadow-md hover:opacity-95 transition-all flex items-center gap-2 cursor-pointer"
+                >
+                  {downloadingPdf ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                  <span>Download PDF</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 };
