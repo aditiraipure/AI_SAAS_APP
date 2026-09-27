@@ -7,6 +7,7 @@ import {
   Image,
   LogOut,
   Scissors,
+  Sparkles,
   SquarePen,
   Users,
   X,
@@ -17,6 +18,7 @@ import { useUserPlan } from "../utils/plan";
 
 const navItems = [
   { name: "Dashboard", path: "/ai", icon: House },
+  { name: "Resume Builder", path: "/ai/resume-builder", icon: Sparkles },
   { name: "Write Article", path: "/ai/write-article", icon: SquarePen },
   { name: "Blog Titles", path: "/ai/blog-titles", icon: Hash },
   { name: "Generate Images", path: "/ai/generate-images", icon: Image },

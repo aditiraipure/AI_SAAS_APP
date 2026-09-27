@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Layout from "./pages/Layout";
 import RemoveBG from "./pages/RemoveBG";
 import RemoveObj from "./pages/RemoveObj";
+import ResumeBuilder from "./pages/ResumeBuilder";
 import ReviewResume from "./pages/ReviewResume";
 import WriteAriticle from "./pages/WriteAriticle";
 
@@ -45,6 +46,9 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/ai" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="resume-builder" element={<ResumeBuilder />} />
+          <Route path="resumebuilder" element={<ResumeBuilder />} />
+          <Route path="resume" element={<ResumeBuilder />} />
           <Route path="write-article" element={<WriteAriticle />} />
           <Route path="blog-titles" element={<Blogtitles />} />
           <Route path="generate-images" element={<GenerateImages />} />
@@ -53,6 +57,8 @@ const App = () => {
           <Route path="review-resume" element={<ReviewResume />} />
           <Route path="community" element={<Community />} />
         </Route>
+        <Route path="/resume-builder" element={<ResumeBuilder />} />
+        <Route path="/resumebuilder" element={<ResumeBuilder />} />
         <Route path="/writeariticle" element={<WriteAriticle />} />
         <Route path="/blogtitles" element={<Blogtitles />} />
         <Route path="/removebg" element={<RemoveBG />} />

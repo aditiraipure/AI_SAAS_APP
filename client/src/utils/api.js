@@ -18,3 +18,4 @@ export const getBackendUrl = () => {
 
 export const backendUrl = getBackendUrl();
 export default backendUrl;
+

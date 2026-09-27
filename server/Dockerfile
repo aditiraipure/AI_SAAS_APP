@@ -1,3 +1,5 @@
+# Use official Node.js 20 Alpine production-ready base image
+FROM node:20-alpine
 # Use official Node.js 22 Alpine production-ready base image (Required for OpenAI 7.x)
 FROM node:22-alpine
 

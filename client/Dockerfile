@@ -1,3 +1,5 @@
+# Stage 1: Build stage with Node.js
+FROM node:20-alpine AS build
 # Stage 1: Build stage with Node.js 22
 FROM node:22-alpine AS build
 

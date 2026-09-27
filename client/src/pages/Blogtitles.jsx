@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { backendUrl } from "../utils/api";
 
 const categories = [
   "General",
@@ -30,6 +29,11 @@ const Blogtitles = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copiedIndex, setCopiedIndex] = useState(null);
+
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL ||
+    import.meta.env.VITE_BASE_URL ||
+    "http://localhost:5000";
 
   const handleGenerate = async (e) => {
     e.preventDefault();

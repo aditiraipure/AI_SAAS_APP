@@ -13,6 +13,11 @@ const Community = () => {
   const [error, setError] = useState("");
   const [likingIds, setLikingIds] = useState(new Set());
 
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL ||
+    import.meta.env.VITE_BASE_URL ||
+    "http://localhost:5000";
+
   const fetchPublished = useCallback(
     async (isManual = false) => {
       setLoading(true);

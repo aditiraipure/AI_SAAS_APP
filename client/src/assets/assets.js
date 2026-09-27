@@ -4,6 +4,7 @@ import {
   Hash,
   Image,
   Scissors,
+  Sparkles,
   SquarePen,
 } from "lucide-react";
 import ai_gen_img_1 from "./ai_gen_img_1.png";
@@ -67,6 +68,14 @@ export const AiToolsData = [
     Icon: Scissors,
     bg: { from: "#5C6AF1", to: "#427DF5" },
     path: "/ai/remove-object",
+  },
+  {
+    title: "AI Resume Builder",
+    description:
+      "Build, customize, and export professional ATS-friendly resumes with AI-driven content generation and templates.",
+    Icon: Sparkles,
+    bg: { from: "#6366F1", to: "#A855F7" },
+    path: "/ai/resume-builder",
   },
   {
     title: "Resume Review",

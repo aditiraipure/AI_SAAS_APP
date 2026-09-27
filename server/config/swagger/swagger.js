@@ -183,6 +183,10 @@ const swaggerOptions = {
     },
     tags: [
       {
+        name: "Resume Builder",
+        description: "AI-Powered Resume Builder, ATS analysis, and PDF/DOCX Export",
+      },
+      {
         name: "AI Tools",
         description: "Endpoints for AI-powered generation tools",
       },

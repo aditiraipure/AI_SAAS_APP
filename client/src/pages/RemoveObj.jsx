@@ -23,6 +23,11 @@ const RemoveObj = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const backendUrl =
+    import.meta.env.VITE_BACKEND_URL ||
+    import.meta.env.VITE_BASE_URL ||
+    "http://localhost:5000";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedFile) {

@@ -5,6 +5,7 @@ import express from "express";
 import connectDB from "./config/db.js";
 import { swaggerSpec, swaggerUi } from "./config/swagger/swagger.js";
 import aiRouter from "./routes/aiRoute.js";
+import resumeRouter from "./routes/resumeRoutes.js";
 import userRouter from "./routes/userroutes.js";
 
 const app = express();
@@ -13,6 +14,8 @@ const PORT = process.env.PORT || 5000;
 // Connect to QuickAI Database
 await connectDB();
 
+// Middlewares
+app.use(cors());
 // Dynamic CORS configuration for local Docker testing and production
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
@@ -51,6 +54,9 @@ app.get("/", (req, res) => {
 
 // AI Routes
 app.use("/api/ai", aiRouter);
+
+// Resume Builder Routes
+app.use("/api/resumes", resumeRouter);
 
 // User & Creations Routes
 app.use("/api/user", userRouter);
