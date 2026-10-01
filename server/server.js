@@ -12,7 +12,12 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to QuickAI Database
-await connectDB();
+try {
+  await connectDB();
+} catch (error) {
+  console.error("Fatal: Database connection failed. Server startup aborted.");
+  process.exit(1);
+}
 
 // Middlewares
 app.use(cors());

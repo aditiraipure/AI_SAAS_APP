@@ -21,11 +21,6 @@ const WriteAriticle = () => {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const backendUrl =
-    import.meta.env.VITE_BACKEND_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000";
-
   const handleGenerate = async (e) => {
     e.preventDefault();
     if (!topic.trim()) {

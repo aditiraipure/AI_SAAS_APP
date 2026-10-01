@@ -9,16 +9,18 @@ import cloudinary from "../config/cloudinary.js";
 import Creation from "../models/creationModel.js";
 
 const AI = new OpenAI({
-  apiKey: process.env.GEMINI_API_KEY || process.env.GEMINI_API_kEY,
+  apiKey:
+    process.env.GEMINI_API_KEY ||
+    process.env.GEMINI_API_kEY ||
+    "dummy_key",
   baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
 });
 
 // Supported Gemini models with fallback hierarchy
 const SUPPORTED_MODELS = [
-  "gemini-3.6-flash",
-  "gemini-3.5-flash",
-  "gemini-3.7-flash",
-  "gemini-3.8-flash",
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-1.5-flash",
 ];
 
 /**
@@ -687,39 +689,12 @@ export const resumeReview = async (req, res) => {
       } catch (pdfErr) {
         console.warn("PDF extraction error:", pdfErr.message);
       }
-    } else if (ext === ".docx") {
+    } else if (ext === ".docx" || ext === ".doc") {
       try {
         const docResult = await mammoth.extractRawText({ path: tempFilePath });
         extractedText = docResult.value || "";
       } catch (docErr) {
-        console.warn("DOCX extraction error:", docErr.message);
-      }
-    } else if (ext === ".doc") {
-      try {
-        const docResult = await mammoth.extractRawText({ path: tempFilePath });
-        extractedText = docResult.value || "";
-      } catch (docErr) {
-        // Fallback for legacy / plain text .doc
-        try {
-          extractedText = fs.readFileSync(tempFilePath, "utf-8");
-        } catch (readErr) {
-          console.warn("DOC read error:", readErr.message);
-        }
-      }
-    } else {
-      try {
-        extractedText = fs.readFileSync(tempFilePath, "utf-8");
-      } catch (readErr) {
-        console.warn("File read error:", readErr.message);
-      }
-    }
-
-    // Secondary fallback
-    if (!extractedText || extractedText.trim().length === 0) {
-      try {
-        extractedText = fs.readFileSync(tempFilePath, "utf-8");
-      } catch (e) {
-        // ignore
+        console.warn("DOC/DOCX extraction error:", docErr.message);
       }
     }
 
@@ -729,7 +704,7 @@ export const resumeReview = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Could not extract sufficient text from the uploaded resume. Please ensure the document is not an image scan or empty.",
+          "Could not extract sufficient text from the uploaded resume. Please ensure the document contains readable text and is not an image scan or empty.",
       });
     }
 

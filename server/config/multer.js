@@ -21,28 +21,30 @@ const storage = multer.diskStorage({
   },
 });
 
+const ALLOWED_FILE_TYPES = {
+  ".jpg": ["image/jpeg", "image/jpg"],
+  ".jpeg": ["image/jpeg", "image/jpg"],
+  ".png": ["image/png"],
+  ".webp": ["image/webp"],
+  ".pdf": ["application/pdf"],
+  ".doc": ["application/msword"],
+  ".docx": [
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
+};
+
 export const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5 MB limit
   },
   fileFilter: (req, file, cb) => {
-    const allowedExtensions = /\.(jpg|jpeg|png|webp|pdf|doc|docx)$/i;
-    const allowedMimeTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/webp",
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/octet-stream",
-    ];
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const mime = (file.mimetype || "").toLowerCase().trim();
 
-    if (
-      allowedMimeTypes.includes(file.mimetype) ||
-      allowedExtensions.test(file.originalname)
-    ) {
+    const validMimes = ALLOWED_FILE_TYPES[ext];
+
+    if (validMimes && validMimes.includes(mime)) {
       cb(null, true);
     } else {
       cb(

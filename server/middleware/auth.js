@@ -4,7 +4,7 @@ import User from "../models/userModel.js";
 
 /**
  * Authentication Middleware using Clerk & Clerk Billing
- * Validates authenticated user, retrieves current billing plan from Clerk Billing,
+ * Validates authenticated user, retrieves current billing plan from Clerk Billing / session claims,
  * syncs user profile and subscription with MongoDB, and enforces plan-based access.
  */
 export const auth = async (req, res, next) => {
@@ -24,78 +24,101 @@ export const auth = async (req, res, next) => {
       });
     }
 
+    const claims = authData?.sessionClaims || req.auth?.sessionClaims || {};
+
+    // 1. Check claims in JWT session token (Zero network latency)
     let detectedPlan = null;
-    let userName = "QuickAI Creator";
-    let userEmail = "";
+    const claimPlan =
+      claims?.plan ||
+      claims?.metadata?.plan ||
+      claims?.publicMetadata?.plan ||
+      claims?.unsafeMetadata?.plan ||
+      claims?.subscription ||
+      claims?.tier;
 
-    // 1. Get real subscription from Clerk Billing (Clerk Source of Truth)
-    try {
-      if (clerkClient.billing?.getUserBillingSubscription) {
-        const billingSub =
-          await clerkClient.billing.getUserBillingSubscription(userId);
-        if (billingSub && billingSub.status === "active") {
-          const activeItem = billingSub.subscriptionItems?.find(
-            (item) => item.status === "active",
-          );
-          const planSlug =
-            activeItem?.plan?.slug?.toLowerCase() ||
-            activeItem?.plan?.name?.toLowerCase();
+    if (claimPlan && typeof claimPlan === "string") {
+      detectedPlan = claimPlan.toLowerCase().trim();
+    }
 
-          if (planSlug) {
-            detectedPlan = planSlug.trim();
+    let userName =
+      claims?.fullName ||
+      claims?.full_name ||
+      claims?.name ||
+      [claims?.firstName || claims?.first_name, claims?.lastName || claims?.last_name]
+        .filter(Boolean)
+        .join(" ") ||
+      claims?.username ||
+      claims?.email?.split("@")[0] ||
+      null;
+
+    let userEmail =
+      claims?.email ||
+      claims?.email_address ||
+      claims?.primary_email_address ||
+      "";
+
+    // 2. Fetch existing user record from local MongoDB database
+    let dbUser = await User.findOne({ userId });
+
+    // 3. Fallback to Clerk API only when required (e.g. brand new user onboarding or missing critical profile data)
+    if (!dbUser || (!userName && !userEmail)) {
+      try {
+        const user = await clerkClient.users.getUser(userId);
+
+        if (!detectedPlan) {
+          const clerkPlan =
+            user?.publicMetadata?.plan ||
+            user?.unsafeMetadata?.plan ||
+            user?.privateMetadata?.plan ||
+            user?.publicMetadata?.subscription ||
+            user?.unsafeMetadata?.subscription ||
+            user?.publicMetadata?.tier ||
+            user?.unsafeMetadata?.tier;
+
+          if (clerkPlan && typeof clerkPlan === "string") {
+            detectedPlan = clerkPlan.toLowerCase().trim();
           }
         }
+
+        userName =
+          userName ||
+          user?.fullName ||
+          [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+          user?.username ||
+          user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
+          "QuickAI Creator";
+
+        userEmail = userEmail || user?.emailAddresses?.[0]?.emailAddress || "";
+      } catch (clerkError) {
+        console.warn("Clerk user lookup error:", clerkError.message);
       }
-    } catch (billingErr) {
-      // 404 or no active subscription -> expected for free users
-    }
 
-    // 2. Check claims in JWT session token as secondary fallback
-    if (!detectedPlan) {
-      const claims = authData?.sessionClaims || req.auth?.sessionClaims || {};
-      const claimPlan =
-        claims?.plan ||
-        claims?.metadata?.plan ||
-        claims?.publicMetadata?.plan ||
-        claims?.unsafeMetadata?.plan ||
-        claims?.subscription ||
-        claims?.tier;
+      // Check Clerk Billing for new user if plan still not detected
+      if (!detectedPlan && clerkClient.billing?.getUserBillingSubscription) {
+        try {
+          const billingSub =
+            await clerkClient.billing.getUserBillingSubscription(userId);
+          if (billingSub && billingSub.status === "active") {
+            const activeItem = billingSub.subscriptionItems?.find(
+              (item) => item.status === "active",
+            );
+            const planSlug =
+              activeItem?.plan?.slug?.toLowerCase() ||
+              activeItem?.plan?.name?.toLowerCase();
 
-      if (claimPlan && typeof claimPlan === "string") {
-        detectedPlan = claimPlan.toLowerCase().trim();
-      }
-    }
-
-    // 3. Fetch user details from Clerk API
-    try {
-      const user = await clerkClient.users.getUser(userId);
-      req.user = user;
-
-      if (!detectedPlan) {
-        const clerkPlan =
-          user?.publicMetadata?.plan ||
-          user?.unsafeMetadata?.plan ||
-          user?.privateMetadata?.plan ||
-          user?.publicMetadata?.subscription ||
-          user?.unsafeMetadata?.subscription ||
-          user?.publicMetadata?.tier ||
-          user?.unsafeMetadata?.tier;
-
-        if (clerkPlan && typeof clerkPlan === "string") {
-          detectedPlan = clerkPlan.toLowerCase().trim();
+            if (planSlug) {
+              detectedPlan = planSlug.trim();
+            }
+          }
+        } catch (billingErr) {
+          // Expected for free/unsubscribed users
         }
       }
+    }
 
-      userName =
-        user?.fullName ||
-        [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
-        user?.username ||
-        user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] ||
-        "QuickAI Creator";
-
-      userEmail = user?.emailAddresses?.[0]?.emailAddress || "";
-    } catch (clerkError) {
-      console.warn("Clerk user lookup error:", clerkError.message);
+    // If still no detected plan, use plan from existing dbUser if available
+    if (!detectedPlan && dbUser?.plan) {
+      detectedPlan = dbUser.plan.toLowerCase().trim();
     }
 
     // Normalize detected plan
@@ -105,10 +128,9 @@ export const auth = async (req, res, next) => {
       detectedPlan === "enterprise";
 
     const normalizedPlan = isDetectedPremium ? "premium" : "free";
+    userName = userName || dbUser?.name || "QuickAI Creator";
 
     // 4. Sync / retrieve user record in database
-    let dbUser = await User.findOne({ userId });
-
     if (!dbUser) {
       const uniqueUsername = `${userId}_${Date.now()}`;
       dbUser = await User.create({
@@ -121,7 +143,7 @@ export const auth = async (req, res, next) => {
       });
     } else {
       let needsSave = false;
-      if (dbUser.plan.toLowerCase() !== normalizedPlan) {
+      if (detectedPlan && dbUser.plan.toLowerCase() !== normalizedPlan) {
         dbUser.plan = normalizedPlan;
         needsSave = true;
       }

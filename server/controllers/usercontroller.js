@@ -167,37 +167,45 @@ export const toggleLikeCreation = async (req, res) => {
       });
     }
 
-    const creation = await Creation.findById(creationId);
+    // Atomically attempt to remove the like if it already exists
+    const unlikedCreation = await Creation.findOneAndUpdate(
+      { _id: creationId, likes: userId },
+      { $pull: { likes: userId } },
+      { new: true },
+    );
 
-    if (!creation) {
+    if (unlikedCreation) {
+      return res.status(200).json({
+        success: true,
+        message: "Creation unliked",
+        likes: unlikedCreation.likes || [],
+        likesCount: (unlikedCreation.likes || []).length,
+        isLiked: false,
+        creation: unlikedCreation,
+      });
+    }
+
+    // If not unliked, atomically add the like
+    const likedCreation = await Creation.findOneAndUpdate(
+      { _id: creationId },
+      { $addToSet: { likes: userId } },
+      { new: true },
+    );
+
+    if (!likedCreation) {
       return res.status(404).json({
         success: false,
         message: "Creation not found",
       });
     }
 
-    // Ensure likes is an array
-    if (!Array.isArray(creation.likes)) {
-      creation.likes = [];
-    }
-
-    const alreadyLiked = creation.likes.includes(userId);
-
-    if (alreadyLiked) {
-      creation.likes = creation.likes.filter((id) => id !== userId);
-    } else {
-      creation.likes.push(userId);
-    }
-
-    await creation.save();
-
     return res.status(200).json({
       success: true,
-      message: alreadyLiked ? "Creation unliked" : "Creation liked",
-      likes: creation.likes,
-      likesCount: creation.likes.length,
-      isLiked: !alreadyLiked,
-      creation,
+      message: "Creation liked",
+      likes: likedCreation.likes || [],
+      likesCount: (likedCreation.likes || []).length,
+      isLiked: true,
+      creation: likedCreation,
     });
   } catch (error) {
     console.error("Error toggling like on creation:", error.message);

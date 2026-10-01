@@ -19,7 +19,7 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:-pk_test_bmVlZGVkLWNhbWVsLTIwMDEuY2xlcmsuYWNjb3VudHMuZGV2JA}
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
         VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:5000}
         VITE_BASE_URL: ${VITE_BASE_URL:-http://localhost:5000}
     container_name: quickai-frontend

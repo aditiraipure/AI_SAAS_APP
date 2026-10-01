@@ -595,8 +595,15 @@ export const analyzeResumeAts = async (req, res) => {
 
     const aiResult = await callGeminiJson(systemInstruction, userPrompt, 2000, 0.2);
 
-    const rawScore = Number(aiResult.score);
-    const score = Number.isFinite(rawScore) ? Math.min(100, Math.max(0, Math.round(rawScore))) : 70;
+    const rawScore = Number(aiResult?.score);
+    if (!aiResult || !Number.isFinite(rawScore)) {
+      return res.status(502).json({
+        success: false,
+        message: "AI service was unable to evaluate ATS score for this resume. Please try again later.",
+      });
+    }
+
+    const score = Math.min(100, Math.max(0, Math.round(rawScore)));
 
     resume.atsAnalysis = {
       score,

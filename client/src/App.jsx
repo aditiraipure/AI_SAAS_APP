@@ -1,16 +1,26 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "react-hot-toast";
 import { Route, Routes } from "react-router-dom";
-import Blogtitles from "./pages/Blogtitles";
-import Community from "./pages/Community";
-import Dashboard from "./pages/Dashboard";
-import GenerateImages from "./pages/GenerateImages";
-import Home from "./pages/Home";
-import Layout from "./pages/Layout";
-import RemoveBG from "./pages/RemoveBG";
-import RemoveObj from "./pages/RemoveObj";
-import ResumeBuilder from "./pages/ResumeBuilder";
-import ReviewResume from "./pages/ReviewResume";
-import WriteAriticle from "./pages/WriteAriticle";
+
+// Route-level code splitting using React.lazy
+const Home = lazy(() => import("./pages/Home"));
+const Layout = lazy(() => import("./pages/Layout"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ResumeBuilder = lazy(() => import("./pages/ResumeBuilder"));
+const WriteAriticle = lazy(() => import("./pages/WriteAriticle"));
+const Blogtitles = lazy(() => import("./pages/Blogtitles"));
+const GenerateImages = lazy(() => import("./pages/GenerateImages"));
+const RemoveBG = lazy(() => import("./pages/RemoveBG"));
+const RemoveObj = lazy(() => import("./pages/RemoveObj"));
+const ReviewResume = lazy(() => import("./pages/ReviewResume"));
+const Community = lazy(() => import("./pages/Community"));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex flex-col items-center justify-center bg-[#F8FAFD] gap-3">
+    <div className="w-9 h-9 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+    <p className="text-xs font-medium text-gray-500">Loading page...</p>
+  </div>
+);
 
 const App = () => {
   return (
@@ -42,30 +52,32 @@ const App = () => {
           },
         }}
       />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/ai" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="resume-builder" element={<ResumeBuilder />} />
-          <Route path="resumebuilder" element={<ResumeBuilder />} />
-          <Route path="resume" element={<ResumeBuilder />} />
-          <Route path="write-article" element={<WriteAriticle />} />
-          <Route path="blog-titles" element={<Blogtitles />} />
-          <Route path="generate-images" element={<GenerateImages />} />
-          <Route path="remove-background" element={<RemoveBG />} />
-          <Route path="remove-object" element={<RemoveObj />} />
-          <Route path="review-resume" element={<ReviewResume />} />
-          <Route path="community" element={<Community />} />
-        </Route>
-        <Route path="/resume-builder" element={<ResumeBuilder />} />
-        <Route path="/resumebuilder" element={<ResumeBuilder />} />
-        <Route path="/writeariticle" element={<WriteAriticle />} />
-        <Route path="/blogtitles" element={<Blogtitles />} />
-        <Route path="/removebg" element={<RemoveBG />} />
-        <Route path="/removeobj" element={<RemoveObj />} />
-        <Route path="/reviewresume" element={<ReviewResume />} />
-        <Route path="/community" element={<Community />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/ai" element={<Layout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="resume-builder" element={<ResumeBuilder />} />
+            <Route path="resumebuilder" element={<ResumeBuilder />} />
+            <Route path="resume" element={<ResumeBuilder />} />
+            <Route path="write-article" element={<WriteAriticle />} />
+            <Route path="blog-titles" element={<Blogtitles />} />
+            <Route path="generate-images" element={<GenerateImages />} />
+            <Route path="remove-background" element={<RemoveBG />} />
+            <Route path="remove-object" element={<RemoveObj />} />
+            <Route path="review-resume" element={<ReviewResume />} />
+            <Route path="community" element={<Community />} />
+          </Route>
+          <Route path="/resume-builder" element={<ResumeBuilder />} />
+          <Route path="/resumebuilder" element={<ResumeBuilder />} />
+          <Route path="/writeariticle" element={<WriteAriticle />} />
+          <Route path="/blogtitles" element={<Blogtitles />} />
+          <Route path="/removebg" element={<RemoveBG />} />
+          <Route path="/removeobj" element={<RemoveObj />} />
+          <Route path="/reviewresume" element={<ReviewResume />} />
+          <Route path="/community" element={<Community />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 };
