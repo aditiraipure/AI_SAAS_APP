@@ -7,8 +7,12 @@ import {
   removeImageBackground,
   removeImageObject,
   resumeReview,
-} from "../controllers/aicontroller.js";
+} from "../controllers/aiController.js";
 import { auth } from "../middleware/auth.js";
+import {
+  aiRateLimiter,
+  validateAiInputMiddleware,
+} from "../security/promptSecurity.js";
 
 const aiRouter = express.Router();
 
@@ -60,7 +64,13 @@ const aiRouter = express.Router();
  *       500:
  *         description: Internal server error or Gemini API error
  */
-aiRouter.post("/generate-article", auth, generateArticle);
+aiRouter.post(
+  "/generate-article",
+  auth,
+  aiRateLimiter({ endpointName: "generate_article", limit: 20 }),
+  validateAiInputMiddleware({ maxPromptLength: 4000, requiredFields: ["prompt"] }),
+  generateArticle
+);
 
 /**
  * @openapi
@@ -129,7 +139,13 @@ aiRouter.post("/generate-article", auth, generateArticle);
  *       500:
  *         description: Internal server error
  */
-aiRouter.post("/generate-blog-title", auth, generateBlogTitle);
+aiRouter.post(
+  "/generate-blog-title",
+  auth,
+  aiRateLimiter({ endpointName: "generate_blog_title", limit: 30 }),
+  validateAiInputMiddleware({ maxPromptLength: 1000, requiredFields: ["prompt"] }),
+  generateBlogTitle
+);
 
 /**
  * @openapi
@@ -194,7 +210,13 @@ aiRouter.post("/generate-blog-title", auth, generateBlogTitle);
  *       500:
  *         description: Internal server error or Cloudinary upload failure
  */
-aiRouter.post("/generate-image", auth, generateImage);
+aiRouter.post(
+  "/generate-image",
+  auth,
+  aiRateLimiter({ endpointName: "generate_image", limit: 20 }),
+  validateAiInputMiddleware({ maxPromptLength: 1000, requiredFields: ["prompt"] }),
+  generateImage
+);
 
 /**
  * @openapi
@@ -371,6 +393,12 @@ aiRouter.post(
  *       500:
  *         description: AI model or text extraction error
  */
-aiRouter.post("/resume-review", upload.single("resume"), auth, resumeReview);
+aiRouter.post(
+  "/resume-review",
+  upload.single("resume"),
+  auth,
+  aiRateLimiter({ endpointName: "resume_review", limit: 15 }),
+  resumeReview
+);
 
 export default aiRouter;

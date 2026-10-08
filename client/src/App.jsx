@@ -7,7 +7,7 @@ const Home = lazy(() => import("./pages/Home"));
 const Layout = lazy(() => import("./pages/Layout"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const ResumeBuilder = lazy(() => import("./pages/ResumeBuilder"));
-const WriteAriticle = lazy(() => import("./pages/WriteAriticle"));
+const WriteArticle = lazy(() => import("./pages/WriteArticle"));
 const Blogtitles = lazy(() => import("./pages/Blogtitles"));
 const GenerateImages = lazy(() => import("./pages/GenerateImages"));
 const RemoveBG = lazy(() => import("./pages/RemoveBG"));
@@ -60,7 +60,7 @@ const App = () => {
             <Route path="resume-builder" element={<ResumeBuilder />} />
             <Route path="resumebuilder" element={<ResumeBuilder />} />
             <Route path="resume" element={<ResumeBuilder />} />
-            <Route path="write-article" element={<WriteAriticle />} />
+            <Route path="write-article" element={<WriteArticle />} />
             <Route path="blog-titles" element={<Blogtitles />} />
             <Route path="generate-images" element={<GenerateImages />} />
             <Route path="remove-background" element={<RemoveBG />} />
@@ -70,7 +70,7 @@ const App = () => {
           </Route>
           <Route path="/resume-builder" element={<ResumeBuilder />} />
           <Route path="/resumebuilder" element={<ResumeBuilder />} />
-          <Route path="/writeariticle" element={<WriteAriticle />} />
+          <Route path="/writeariticle" element={<WriteArticle />} />
           <Route path="/blogtitles" element={<Blogtitles />} />
           <Route path="/removebg" element={<RemoveBG />} />
           <Route path="/removeobj" element={<RemoveObj />} />

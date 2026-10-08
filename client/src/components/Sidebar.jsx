@@ -9,7 +9,6 @@ import {
   Scissors,
   Sparkles,
   SquarePen,
-  Users,
   X,
 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -24,7 +23,6 @@ const navItems = [
   { name: "Remove Object", path: "/ai/remove-object", icon: Scissors },
   { name: "Review Resume", path: "/ai/review-resume", icon: FileText },
   { name: "Resume Builder", path: "/ai/resume-builder", icon: Sparkles },
-  { name: "Community", path: "/ai/community", icon: Users },
 ];
 
 const Sidebar = ({ onClose }) => {

@@ -6,7 +6,7 @@ import connectDB from "./config/db.js";
 import { swaggerSpec, swaggerUi } from "./config/swagger/swagger.js";
 import aiRouter from "./routes/aiRoute.js";
 import resumeRouter from "./routes/resumeRoutes.js";
-import userRouter from "./routes/userroutes.js";
+import userRouter from "./routes/userRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;

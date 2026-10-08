@@ -5,11 +5,12 @@ import {
   MousePointerClick,
   RefreshCw,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
-import CreationsItem from "../components/creationsItem";
+import CreationsItem from "../components/CreationsItem";
 import { backendUrl } from "../utils/api";
 import { useUserPlan } from "../utils/plan";
 
@@ -135,6 +136,22 @@ const Dashboard = () => {
             <MousePointerClick className="size-5.5 stroke-[2.2]" />
           </div>
         </div>
+
+        {/* Community Section Card */}
+        <Link
+          to="/ai/community"
+          className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs hover:shadow-md transition-all flex items-center justify-between w-full sm:w-64 cursor-pointer group"
+        >
+          <div>
+            <p className="text-xs text-gray-500 font-medium">Community</p>
+            <p className="text-lg font-bold text-gray-900 mt-1 group-hover:text-blue-600 transition-colors">
+              Explore
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white bg-gradient-to-br from-[#10B981] to-[#059669] shadow-xs group-hover:scale-105 transition-transform">
+            <Users className="size-5.5 stroke-[2.2]" />
+          </div>
+        </Link>
       </div>
 
       {/* Recent Creations Section */}

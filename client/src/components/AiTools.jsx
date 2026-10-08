@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { AiToolsData } from "../assets/assets";
 
-const AiTooles = () => {
+const AiTools = () => {
   const navigate = useNavigate();
 
   return (
@@ -56,4 +56,4 @@ const AiTooles = () => {
   );
 };
 
-export default AiTooles;
+export default AiTools;

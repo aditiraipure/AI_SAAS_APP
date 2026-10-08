@@ -1,4 +1,4 @@
-import AiTooles from "../components/AiTooles";
+import AiTools from "../components/AiTools";
 import Footer from "../components/Footer";
 import Hero from "../components/Hero";
 import Navbar from "../components/Navbar";
@@ -10,7 +10,7 @@ const Home = () => {
     <>
       <Navbar />
       <Hero />
-      <AiTooles />
+      <AiTools />
       <Testimonial />
       <Plan />
       <Footer />

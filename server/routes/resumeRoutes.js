@@ -1,17 +1,22 @@
 import express from "express";
 import {
-  createResume,
-  getUserResumes,
-  getResumeById,
-  updateResume,
-  deleteResume,
-  generateResumeContent,
-  improveResumeSection,
-  improveDraftSection,
   analyzeResumeAts,
+  createResume,
+  deleteResume,
+  expandAbbreviation,
   exportResume,
+  generateResumeContent,
+  getResumeById,
+  getUserResumes,
+  improveDraftSection,
+  improveResumeSection,
+  updateResume,
 } from "../controllers/resumeController.js";
 import { auth } from "../middleware/auth.js";
+import {
+  aiRateLimiter,
+  validateAiInputMiddleware,
+} from "../security/promptSecurity.js";
 
 const resumeRouter = express.Router();
 
@@ -184,7 +189,12 @@ resumeRouter.delete("/:id", auth, deleteResume);
  *       500:
  *         description: AI generation failed
  */
-resumeRouter.post("/:id/generate", auth, generateResumeContent);
+resumeRouter.post(
+  "/:id/generate",
+  auth,
+  aiRateLimiter({ endpointName: "generate_resume", limit: 20 }),
+  generateResumeContent
+);
 
 /**
  * @openapi
@@ -224,13 +234,49 @@ resumeRouter.post("/:id/generate", auth, generateResumeContent);
  *     responses:
  *       200:
  *         description: Section improved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
  *       400:
  *         description: Missing or invalid section
  *       404:
  *         description: Resume not found
  */
-resumeRouter.post("/improve", auth, improveDraftSection);
-resumeRouter.post("/:id/improve", auth, improveResumeSection);
+resumeRouter.post(
+  "/improve",
+  auth,
+  aiRateLimiter({ endpointName: "improve_draft", limit: 30 }),
+  validateAiInputMiddleware({ maxPromptLength: 5000, requiredFields: ["section"] }),
+  improveDraftSection
+);
+
+resumeRouter.post(
+  "/:id/improve",
+  auth,
+  aiRateLimiter({ endpointName: "improve_section", limit: 30 }),
+  validateAiInputMiddleware({ maxPromptLength: 5000, requiredFields: ["section"] }),
+  improveResumeSection
+);
+
+const optionalAuth = (req, res, next) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization !== "Bearer null" &&
+    req.headers.authorization !== "Bearer undefined"
+  ) {
+    return auth(req, res, next);
+  }
+  next();
+};
+
+resumeRouter.post(
+  "/expand-abbreviation",
+  optionalAuth,
+  aiRateLimiter({ endpointName: "expand_abbreviation", limit: 60 }),
+  validateAiInputMiddleware({ maxPromptLength: 500, requiredFields: [] }),
+  expandAbbreviation
+);
 
 /**
  * @openapi
@@ -266,7 +312,12 @@ resumeRouter.post("/:id/improve", auth, improveResumeSection);
  *       404:
  *         description: Resume not found
  */
-resumeRouter.post("/:id/ats-analysis", auth, analyzeResumeAts);
+resumeRouter.post(
+  "/:id/ats-analysis",
+  auth,
+  aiRateLimiter({ endpointName: "ats_analysis", limit: 25 }),
+  analyzeResumeAts
+);
 
 /**
  * @openapi

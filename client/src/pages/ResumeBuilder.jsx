@@ -311,108 +311,6 @@ const ResumeDatePicker = ({
   );
 };
 
-export const expandEducationDegree = (deg = "") => {
-  if (!deg || typeof deg !== "string") return "";
-  let text = deg.trim();
-
-  // Compound "Degree [in] Branch" patterns (e.g. "BE CS", "BE ENTC", "BTech CSE", "B.Tech in IT")
-  const compoundRegex =
-    /^(B\.?E\.?|B\.?Tech\.?|M\.?E\.?|M\.?Tech\.?|B\.?C\.?A\.?|M\.?C\.?A\.?|B\.?B\.?A\.?|M\.?B\.?A\.?|B\.?Sc\.?|M\.?Sc\.?|B\.?S\.?|M\.?S\.?)\s*(?:in\s+)?(CSE|CS|ENTC|E&TC|E&Tc|ETC|ECE|EEE|EE|MECH|ME|CIVIL|AI\s*&\s*DS|AIDS|AI\/DS|AI\s*&\s*ML|AIML|AI\/ML|IT)(.*)$/i;
-  const match = text.match(compoundRegex);
-  if (match) {
-    const rawDeg = match[1].toUpperCase().replace(/\./g, "");
-    const rawBranch = match[2].toUpperCase().replace(/\s+/g, "");
-    const rest = match[3] ? match[3].trim() : "";
-
-    let degFull = "Bachelor of Engineering";
-    if (rawDeg.startsWith("BTECH")) degFull = "Bachelor of Technology";
-    else if (rawDeg.startsWith("MTECH")) degFull = "Master of Technology";
-    else if (rawDeg.startsWith("ME")) degFull = "Master of Engineering";
-    else if (rawDeg.startsWith("BCA"))
-      degFull = "Bachelor of Computer Applications";
-    else if (rawDeg.startsWith("MCA"))
-      degFull = "Master of Computer Applications";
-    else if (rawDeg.startsWith("BBA"))
-      degFull = "Bachelor of Business Administration";
-    else if (rawDeg.startsWith("MBA"))
-      degFull = "Master of Business Administration";
-    else if (rawDeg.startsWith("BSC") || rawDeg === "BS")
-      degFull = "Bachelor of Science";
-    else if (rawDeg.startsWith("MSC") || rawDeg === "MS")
-      degFull = "Master of Science";
-
-    let branchFull = "Computer Science and Engineering";
-    if (rawBranch === "CS" || rawBranch === "CSE")
-      branchFull = "Computer Science and Engineering";
-    else if (["ENTC", "E&TC", "ETC"].includes(rawBranch))
-      branchFull = "Electronics & Telecommunication Engineering";
-    else if (rawBranch === "ECE")
-      branchFull = "Electronics and Communication Engineering";
-    else if (rawBranch === "IT") branchFull = "Information Technology";
-    else if (rawBranch === "EEE")
-      branchFull = "Electrical and Electronics Engineering";
-    else if (rawBranch === "EE") branchFull = "Electrical Engineering";
-    else if (rawBranch === "ME" || rawBranch === "MECH")
-      branchFull = "Mechanical Engineering";
-    else if (rawBranch === "CIVIL") branchFull = "Civil Engineering";
-    else if (rawBranch.includes("DS"))
-      branchFull = "Artificial Intelligence and Data Science";
-    else if (rawBranch.includes("ML"))
-      branchFull = "Artificial Intelligence and Machine Learning";
-
-    return `${degFull} in ${branchFull}${rest ? ` ${rest}` : ""}`;
-  }
-
-  // Standalone degree replacements
-  let res = text
-    .replace(/\b(B\.?E\.?)\b/gi, "Bachelor of Engineering")
-    .replace(/\b(B\.?Tech\.?)\b/gi, "Bachelor of Technology")
-    .replace(/\b(M\.?E\.?)\b/gi, "Master of Engineering")
-    .replace(/\b(M\.?Tech\.?)\b/gi, "Master of Technology")
-    .replace(/\b(B\.?C\.?A\.?)\b/gi, "Bachelor of Computer Applications")
-    .replace(/\b(M\.?C\.?A\.?)\b/gi, "Master of Computer Applications")
-    .replace(/\b(B\.?B\.?A\.?)\b/gi, "Bachelor of Business Administration")
-    .replace(/\b(M\.?B\.?A\.?)\b/gi, "Master of Business Administration")
-    .replace(/\b(B\.?Sc\.?)\b/gi, "Bachelor of Science")
-    .replace(/\b(M\.?Sc\.?)\b/gi, "Master of Science")
-    .replace(/\b(Ph\.?D\.?)\b/gi, "Doctor of Philosophy");
-
-  // Standalone branch replacements
-  res = res
-    .replace(
-      /\b(E&TC|E&Tc|ENTC|ETC)\b/gi,
-      "Electronics & Telecommunication Engineering",
-    )
-    .replace(/\b(CSE)\b/gi, "Computer Science and Engineering")
-    .replace(/\b(ECE)\b/gi, "Electronics and Communication Engineering")
-    .replace(/\b(EEE)\b/gi, "Electrical and Electronics Engineering")
-    .replace(
-      /\b(AI\s*&\s*DS|AIDS|AI\/DS)\b/gi,
-      "Artificial Intelligence and Data Science",
-    )
-    .replace(
-      /\b(AI\s*&\s*ML|AIML|AI\/ML)\b/gi,
-      "Artificial Intelligence and Machine Learning",
-    );
-
-  return res.replace(/\s{2,}/g, " ").trim();
-};
-
-export const expandEducationInstitution = (inst = "") => {
-  if (!inst || typeof inst !== "string") return "";
-  let text = inst.trim();
-  text = text
-    .replace(
-      /\bPVPIT\b/g,
-      "Padmabhooshan Vasantdada Patil Institute of Technology (PVPIT)",
-    )
-    .replace(/\bCOEP\b/g, "College of Engineering Pune (COEP)")
-    .replace(/\bPICT\b/g, "Pune Institute of Computer Technology (PICT)")
-    .replace(/\bVJTI\b/g, "Veermata Jijabai Technological Institute (VJTI)");
-
-  return text.replace(/\s{2,}/g, " ").trim();
-};
-
 export const formatEducationGrade = (grade = "") => {
   if (!grade || typeof grade !== "string") return "";
   const trimmed = grade.trim();
@@ -928,28 +826,24 @@ const ResumeBuilder = () => {
   };
 
   // Education Abbreviation Expansion on blur
+  const [expandingEdu, setExpandingEdu] = useState({});
+
   const handleExpandEducationField = async (index, field, value) => {
     if (!value || typeof value !== "string" || !value.trim()) return;
     const cleanVal = value.trim();
 
-    // Fast deterministic check first
-    const fastExpanded =
-      field === "degree"
-        ? expandEducationDegree(cleanVal)
-        : expandEducationInstitution(cleanVal);
-
-    if (fastExpanded && fastExpanded !== cleanVal) {
-      updateEducation(index, field, fastExpanded);
-      return;
-    }
-
-    // Call AI expander for abbreviations
-    if (
-      /^[A-Z&. -]{2,14}$/i.test(cleanVal) ||
-      cleanVal.split(" ").length <= 4
-    ) {
+    // Call context-aware AI expander for educational abbreviations and qualifications
+    if (cleanVal.length >= 2 && cleanVal.length <= 80) {
+      const fieldKey = `${index}-${field}`;
+      setExpandingEdu((prev) => ({ ...prev, [fieldKey]: true }));
       try {
         const token = await getToken();
+        const headers = {
+          "Content-Type": "application/json",
+        };
+        if (token) {
+          headers.Authorization = `Bearer ${token}`;
+        }
         const res = await fetch(
           `${backendUrl}/api/resumes/expand-abbreviation`,
           {
@@ -958,26 +852,33 @@ const ResumeBuilder = () => {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
+            headers,
             body: JSON.stringify({
               text: cleanVal,
+              section: "education",
               context:
                 field === "degree"
                   ? "degree / course qualification"
                   : "college / university / institution",
-              location: personalInfo.location || "India",
+              location: personalInfo.location || "",
             }),
           },
         );
         const data = await res.json();
+        const expandedResult = data?.expanded || data?.expandedText;
         if (
           data?.success &&
-          data.expandedText &&
-          data.expandedText !== cleanVal
+          !data.isAmbiguous &&
+          expandedResult &&
+          expandedResult !== cleanVal &&
+          data.category !== "non-education"
         ) {
-          updateEducation(index, field, data.expandedText);
+          updateEducation(index, field, expandedResult);
         }
       } catch {
-        // ignore background error
+        // background expansion error handled silently
+      } finally {
+        setExpandingEdu((prev) => ({ ...prev, [fieldKey]: false }));
       }
     }
   };
@@ -1012,13 +913,31 @@ const ResumeBuilder = () => {
       return;
     }
     setEducation((prev) => prev.filter((_, i) => i !== index));
+    setSavedResume((prev) => {
+      if (!prev || !Array.isArray(prev.education)) return prev;
+      return {
+        ...prev,
+        education: prev.education.filter((_, i) => i !== index),
+      };
+    });
   };
 
   const updateEducation = (index, field, value) => {
     setEducation((prev) => {
       const copy = [...prev];
       copy[index][field] = value;
+      if (copy[index]) {
+        copy[index] = { ...copy[index], [field]: value };
+      }
       return copy;
+    });
+    setSavedResume((prev) => {
+      if (!prev || !Array.isArray(prev.education)) return prev;
+      const copy = [...prev.education];
+      if (copy[index]) {
+        copy[index] = { ...copy[index], [field]: value };
+      }
+      return { ...prev, education: copy };
     });
   };
 
@@ -1277,6 +1196,12 @@ const ResumeBuilder = () => {
       }
 
       setSavedResume(data.resume);
+      if (
+        Array.isArray(data.resume?.education) &&
+        data.resume.education.length > 0
+      ) {
+        setEducation(data.resume.education);
+      }
       toast.success("Resume saved & preview generated successfully!");
 
       // Smooth scroll to preview section
@@ -1520,6 +1445,12 @@ const ResumeBuilder = () => {
 
       setSavedResume(data.resume);
       if (data.resume.summary) setSummary(data.resume.summary);
+      if (
+        Array.isArray(data.resume?.education) &&
+        data.resume.education.length > 0
+      ) {
+        setEducation(data.resume.education);
+      }
       toast.success("Resume bullet points and content polished with AI!");
     } catch (err) {
       console.error("AI Generate all error:", err);
@@ -1596,6 +1527,12 @@ const ResumeBuilder = () => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || "Save failed");
         setSavedResume(data.resume);
+        if (
+          Array.isArray(data.resume?.education) &&
+          data.resume.education.length > 0
+        ) {
+          setEducation(data.resume.education);
+        }
         resumeId = data.resume._id;
       } catch (err) {
         setDownloadingPdf(false);
@@ -2141,6 +2078,17 @@ const ResumeBuilder = () => {
                       <label className="block text-[11px] font-semibold text-gray-600 mb-1">
                         Degree / Course
                       </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-gray-600">
+                          Degree / Course
+                        </label>
+                        {expandingEdu[`${index}-degree`] ? (
+                          <span className="flex items-center gap-1 text-[10px] text-indigo-600 font-medium animate-pulse">
+                            <Loader2 className="size-3 animate-spin" />{" "}
+                            Expanding...
+                          </span>
+                        ) : null}
+                      </div>
                       <input
                         type="text"
                         placeholder="e.g. BE Electronics & Telecommunication"
@@ -2162,6 +2110,17 @@ const ResumeBuilder = () => {
                       <label className="block text-[11px] font-semibold text-gray-600 mb-1">
                         Institution / University
                       </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-semibold text-gray-600">
+                          Institution / University
+                        </label>
+                        {expandingEdu[`${index}-institution`] ? (
+                          <span className="flex items-center gap-1 text-[10px] text-indigo-600 font-medium animate-pulse">
+                            <Loader2 className="size-3 animate-spin" />{" "}
+                            Expanding...
+                          </span>
+                        ) : null}
+                      </div>
                       <input
                         type="text"
                         placeholder="e.g. PVPIT, Pune"
@@ -3399,11 +3358,8 @@ const ResumeBuilder = () => {
                   </h3>
                   <div className="space-y-3">
                     {currentPreview.education.map((edu, idx) => {
-                      const expandedDegree =
-                        expandEducationDegree(edu.degree) || edu.degree;
-                      const expandedInstitution =
-                        expandEducationInstitution(edu.institution) ||
-                        edu.institution;
+                      const degreeText = edu.degree || "";
+                      const institutionText = edu.institution || "";
                       const formattedGrade = formatEducationGrade(edu.grade);
                       const dateRange = [
                         formatResumeDate(edu.startDate),
@@ -3419,7 +3375,7 @@ const ResumeBuilder = () => {
                         >
                           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
                             <div className="font-bold text-gray-900 uppercase tracking-wide">
-                              {expandedInstitution}
+                              {institutionText}
                               {edu.location && (
                                 <span className="font-semibold text-gray-600 normal-case">
                                   , {edu.location}
@@ -3433,7 +3389,7 @@ const ResumeBuilder = () => {
                             )}
                           </div>
                           <div className="text-gray-700 text-xs sm:text-sm">
-                            <span>{expandedDegree}</span>
+                            <span>{degreeText}</span>
                             {formattedGrade && (
                               <span className="text-gray-600 font-medium">
                                 {" "}

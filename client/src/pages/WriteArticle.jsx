@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import ReactMarkdown from "react-markdown";
 import { backendUrl } from "../utils/api";
 
-const WriteAriticle = () => {
+const WriteArticle = () => {
   const { getToken } = useAuth();
   const [topic, setTopic] = useState("");
   const [length, setLength] = useState("short"); // 'short', 'medium', or 'long'
@@ -30,6 +30,7 @@ const WriteAriticle = () => {
 
     setLoading(true);
     setError("");
+    setGeneratedArticle("");
 
     try {
       const token = await getToken();
@@ -43,17 +44,103 @@ const WriteAriticle = () => {
         body: JSON.stringify({
           prompt: topic,
           length: length,
+          stream: true,
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Failed to generate article");
+        let errorMsg = "Failed to generate article";
+        try {
+          const data = await response.json();
+          errorMsg = data.message || errorMsg;
+        } catch (_) {
+          // not JSON
+        }
+        throw new Error(errorMsg);
       }
 
-      setGeneratedArticle(data.article || data.content || "");
-      toast.success("Article generated successfully!");
+      const contentType = response.headers.get("content-type") || "";
+
+      if (contentType.includes("text/event-stream") && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let accumulatedArticle = "";
+        let buffer = "";
+        let completedNormally = false;
+        let streamError = null;
+
+        const processSseBuffer = (chunkText, isFinal = false) => {
+          buffer += chunkText;
+          const lines = buffer.split(/\r?\n/);
+          buffer = isFinal ? "" : (lines.pop() || "");
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data:")) continue;
+
+            const dataStr = trimmed.replace(/^data:\s*/, "");
+            if (dataStr === "[DONE]") {
+              completedNormally = true;
+              continue;
+            }
+
+            try {
+              const parsed = JSON.parse(dataStr);
+              if (parsed.error) {
+                streamError = parsed.error;
+                return;
+              }
+              if (parsed.chunk || parsed.text) {
+                const chunkText = parsed.chunk || parsed.text || "";
+                accumulatedArticle += chunkText;
+                setGeneratedArticle(accumulatedArticle);
+              }
+              if (parsed.done) {
+                completedNormally = true;
+                if (parsed.article) {
+                  accumulatedArticle = parsed.article;
+                  setGeneratedArticle(accumulatedArticle);
+                }
+              }
+            } catch (_) {
+              // Ignore non-JSON lines or comments
+            }
+          }
+        };
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          processSseBuffer(decoder.decode(value, { stream: true }), false);
+          if (streamError) break;
+        }
+
+        // Flush any remaining buffered characters
+        processSseBuffer(decoder.decode(), true);
+
+        if (streamError) {
+          throw new Error(streamError);
+        }
+
+        const trimmedContent = accumulatedArticle.trim();
+
+        if (!completedNormally || trimmedContent.length === 0) {
+          throw new Error(
+            "Article generation was interrupted or incomplete. Please try again.",
+          );
+        }
+
+        toast.success("Article generated successfully!");
+      } else {
+        const data = await response.json();
+        const content = data.article || data.content;
+        if (!content) {
+          throw new Error(data.message || "Failed to generate article");
+        }
+        setGeneratedArticle(content);
+        toast.success("Article generated successfully!");
+      }
     } catch (err) {
       console.error("Article generation error:", err);
       const errMsg =
@@ -252,4 +339,4 @@ const WriteAriticle = () => {
   );
 };
 
-export default WriteAriticle;
+export default WriteArticle;
