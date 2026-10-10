@@ -11,6 +11,12 @@
  */
 
 import crypto from "crypto";
+import {
+  analyzeGeminiError,
+  calculateAdaptiveBackoff,
+} from "../utils/geminiErrorHelper.js";
+
+export { analyzeGeminiError, calculateAdaptiveBackoff };
 
 /**
  * Standardized high-authority security directives for Gemini system instructions.
@@ -391,48 +397,22 @@ export const validateAiInputMiddleware = (options = {}) => {
 };
 
 /**
- * Determines if an error is a transient server/rate-limit error (503, 429, 500, timeout)
- * vs a permanent client error (404, 400, 401, 403) which should never be retried for the same model.
+ * Determines if an error is a transient server/rate-limit error (503, transient 429, 500, timeout)
+ * vs permanent or exhausted daily quota error using analyzeGeminiError.
  */
 export const isTransientError = (err) => {
-  if (!err) return false;
-  const status = err.status || err.response?.status || err.statusCode;
-  const msg = String(err.message || "");
-
-  // Permanent client errors: 404 (model not found), 400 (bad argument), 401 (auth), 403 (forbidden)
-  if (status === 404 || status === 400 || status === 401 || status === 403) {
-    return false;
-  }
-
-  // Transient errors eligible for bounded retry with exponential backoff & jitter
-  return (
-    status === 503 ||
-    status === 429 ||
-    status === 500 ||
-    status === 502 ||
-    status === 504 ||
-    msg.includes("503") ||
-    msg.includes("429") ||
-    msg.includes("UNAVAILABLE") ||
-    msg.includes("high demand") ||
-    msg.includes("timeout") ||
-    msg.includes("ECONNABORTED") ||
-    msg.includes("RESOURCE_EXHAUSTED") ||
-    msg.includes("ETIMEDOUT") ||
-    msg.includes("ECONNRESET")
-  );
+  return analyzeGeminiError(err).isTransient;
 };
 
 /**
- * Calculates exponential backoff delay with random jitter (e.g. attempt 0 -> ~500ms, attempt 1 -> ~1000ms, attempt 2 -> ~2000ms)
+ * Calculates adaptive backoff delay with random jitter and respects Retry-After when available.
  */
 export const calculateBackoff = (
   attempt = 0,
   baseDelay = 500,
   maxDelay = 4000,
+  retryAfterMs = null,
 ) => {
-  const exponential = Math.pow(2, attempt) * baseDelay;
-  const jitter = Math.floor(Math.random() * 200);
-  return Math.min(maxDelay, exponential + jitter);
+  return calculateAdaptiveBackoff(attempt, retryAfterMs, baseDelay, maxDelay);
 };
 

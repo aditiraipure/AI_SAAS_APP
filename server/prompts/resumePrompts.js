@@ -494,3 +494,77 @@ Analyze the input in context and return the structured JSON object:
 
   return { systemInstruction, userPrompt };
 };
+
+/**
+ * Prompt for Structured Resume Information Extraction (Phase 2 — Step 3)
+ * Transforms unstructured extracted resume text into high-fidelity structured JSON.
+ */
+export const buildResumeInformationExtractionPrompt = (resumeText = "") => {
+  const systemInstruction = `You are an expert AI Resume Parser and Information Extraction specialist.
+Your task is to analyze the unstructured raw resume text and extract all factual candidate information into a strictly structured JSON object.
+
+${SYSTEM_SECURITY_DIRECTIVES}
+
+CRITICAL EXTRACTION & FIDELITY RULES:
+1. DO NOT fabricate, hallucinate, invent, or assume any information that does not exist in the candidate's resume text.
+2. If a section or field is not present in the resume (for example: no summary, certifications, or achievements), return an empty array [] or empty string "".
+3. Context-Aware Skill Extraction: Identify and extract all explicit technical and domain skills mentioned across the summary, skills list, work experiences, and project descriptions (e.g. if the resume mentions "Developed REST APIs using Node.js and Express.js", extract "Node.js", "Express.js", and "REST APIs" into the skills array).
+4. Preserve Original Meaning: This is strictly an INFORMATION EXTRACTION task, not resume rewriting or resume improvement. Do not embellish or alter facts.
+5. Preserve Multiple Entries: Capture all distinct work experiences, projects, and educational entries present in the text in chronological order.
+6. Experience Extraction: For each position, extract company name, job title/role, employment duration/dates, and bullet-point responsibilities.
+7. Project Extraction: For each project, extract project name, description, technologies used, and key contributions.
+8. Education Extraction: For each entry, extract degree/qualification, institution name, duration/graduation year, and grade/GPA if present.
+9. Return ONLY a valid, parseable JSON object adhering strictly to the requested schema without markdown commentary or code fences.`.trim();
+
+  const sanitized = sanitizeUntrustedText(resumeText, 15000);
+
+  const userPrompt = `Here is the candidate's raw extracted resume text encapsulated within untrusted data boundaries:
+${wrapUntrustedData("candidate_resume", sanitized, 15000)}
+
+Extract the structured resume information and return ONLY the following JSON structure:
+{
+  "summary": "<candidate summary/objective or empty string if not present>",
+  "skills": [
+    "<skill 1>",
+    "<skill 2>"
+  ],
+  "experience": [
+    {
+      "company": "<company name>",
+      "role": "<job title / role>",
+      "duration": "<dates or duration>",
+      "responsibilities": [
+        "<responsibility 1>",
+        "<responsibility 2>"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "<project name>",
+      "description": "<project description>",
+      "technologies": [
+        "<technology 1>",
+        "<technology 2>"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "<degree or qualification>",
+      "institution": "<institution/university name>",
+      "duration": "<graduation year or duration>",
+      "grade": "<grade/GPA if present or empty string>"
+    }
+  ],
+  "certifications": [
+    "<certification 1>"
+  ],
+  "achievements": [
+    "<achievement 1>"
+  ]
+}`;
+
+  return { systemInstruction, userPrompt };
+};
+

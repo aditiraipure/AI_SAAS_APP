@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@clerk/express": "^2.1.66",
+    "@google/genai": "^2.28.0",
     "axios": "^1.20.0",
     "cloudinary": "^2.11.0",
     "cors": "^2.8.6",

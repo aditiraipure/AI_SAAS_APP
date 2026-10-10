@@ -1,4 +1,6 @@
 import express from "express";
+import { upload } from "../config/multer.js";
+import { resumeReview } from "../controllers/aiController.js";
 import {
   analyzeResumeAts,
   createResume,
@@ -19,6 +21,50 @@ import {
 } from "../security/promptSecurity.js";
 
 const resumeRouter = express.Router();
+
+/**
+ * @openapi
+ * /api/resume/review:
+ *   post:
+ *     summary: End-to-End Resume Review & ATS Analysis (Phase 2)
+ *     description: "Executes the complete multi-stage RAG ATS pipeline: PDF/DOCX text extraction, structured information parsing, section-aware chunking, 768-d embedding generation, MongoDB vector storage, job-description matching via Atlas Vector Search, grounded RAG analysis, and structured ATS output."
+ *     tags:
+ *       - Resume Review
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - resume
+ *             properties:
+ *               resume:
+ *                 type: string
+ *                 format: binary
+ *                 description: Resume document in PDF, DOC, or DOCX format (Max 5MB)
+ *               jobDescription:
+ *                 type: string
+ *                 description: Optional target job description to match against
+ *     responses:
+ *       200:
+ *         description: Resume reviewed successfully
+ *       400:
+ *         description: Missing or invalid file
+ *       403:
+ *         description: Premium-only feature
+ *       500:
+ *         description: Pipeline failure
+ */
+resumeRouter.post(
+  "/review",
+  upload.single("resume"),
+  auth,
+  aiRateLimiter({ endpointName: "resume_review", limit: 15 }),
+  resumeReview
+);
 
 /**
  * @openapi

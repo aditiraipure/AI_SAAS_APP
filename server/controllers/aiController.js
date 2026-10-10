@@ -19,7 +19,25 @@ import {
   SYSTEM_SECURITY_DIRECTIVES,
   wrapUntrustedData,
 } from "../security/promptSecurity.js";
-import { analyzeResumeTextWithAi } from "../services/resumeAiService.js";
+import {
+  analyzeGeminiError,
+  calculateAdaptiveBackoff,
+} from "../utils/geminiErrorHelper.js";
+import {
+  createResumeLogger,
+  generateCorrelationId,
+} from "../utils/resumeLogger.js";
+import {
+  analyzeResumeTextWithAi,
+  chunkStructuredResume,
+  cosineSimilarity,
+  embedResumeChunks,
+  executeResumeReviewPipeline,
+  extractStructuredResumeInfo,
+  processJobDescription,
+  retrieveRelevantResumeChunks,
+  saveResumeChunks,
+} from "../services/resumeAiService.js";
 
 const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_API_kEY;
 
@@ -96,20 +114,20 @@ export const callGeminiWithRetry = async (
         throw new Error("Empty response returned from AI model");
       } catch (err) {
         lastError = err;
-        const isTransient = isTransientError(err);
+        const analysis = analyzeGeminiError(err);
 
-        // 404 / permanent 4xx: do not retry same model, immediately advance to fallback
-        if (!isTransient || attempt >= maxRetries) {
+        // Daily quota exhausted or permanent error: do not retry same model, immediately advance to fallback
+        if (!analysis.isTransient || attempt >= maxRetries) {
           console.warn(
-            `Gemini REST failed on ${model} (attempt ${attempt + 1}, status: ${err.status || err.response?.status}): ${err.message}. Moving to fallback model if available.`,
+            `Gemini REST failed on ${model} (${analysis.category}, attempt ${attempt + 1}): ${analysis.safeMessage}. Moving to fallback model if available.`,
           );
           break;
         }
 
-        // 503 / 429 transient: retry up to 3 times with exponential backoff and jitter
-        const delay = calculateBackoff(attempt);
+        // 503 / 429 transient: retry with adaptive backoff and jitter respecting Retry-After
+        const delay = calculateAdaptiveBackoff(attempt, analysis.retryAfterMs);
         console.warn(
-          `Gemini REST transient error on ${model} (attempt ${attempt + 1}/${maxRetries + 1}, status: ${err.status || err.response?.status}). Retrying in ${delay}ms...`,
+          `Gemini REST transient rate limit on ${model} (${analysis.category}, attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -144,18 +162,18 @@ export const callGeminiWithRetry = async (
         throw new Error("Empty response returned from AI model");
       } catch (err) {
         lastError = err;
-        const isTransient = isTransientError(err);
+        const analysis = analyzeGeminiError(err);
 
-        if (!isTransient || attempt >= maxRetries) {
+        if (!analysis.isTransient || attempt >= maxRetries) {
           console.warn(
-            `Gemini OpenAI endpoint failed on ${model} (attempt ${attempt + 1}): ${err.message}. Moving to fallback model if available.`,
+            `Gemini OpenAI endpoint failed on ${model} (${analysis.category}, attempt ${attempt + 1}): ${analysis.safeMessage}. Moving to fallback model if available.`,
           );
           break;
         }
 
-        const delay = calculateBackoff(attempt);
+        const delay = calculateAdaptiveBackoff(attempt, analysis.retryAfterMs);
         console.warn(
-          `Gemini OpenAI endpoint transient error on ${model} (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
+          `Gemini OpenAI endpoint transient error on ${model} (${analysis.category}, attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -258,19 +276,19 @@ export const callGeminiStream = async (
       } catch (err) {
         lastError = err;
         if (abortSignal?.aborted) return "";
-        const isTransient = isTransientError(err);
+        const analysis = analyzeGeminiError(err);
 
-        // Permanent error (404, etc.) or exceeded max retries: advance to fallback model
-        if (!isTransient || attempt >= maxRetries) {
+        // Daily quota exhausted or permanent error: advance to fallback model
+        if (!analysis.isTransient || attempt >= maxRetries) {
           console.warn(
-            `REST stream failed on ${model} (attempt ${attempt + 1}, status: ${err.status || err.response?.status}): ${err.message}. Moving to fallback model.`,
+            `REST stream failed on ${model} (${analysis.category}, attempt ${attempt + 1}): ${analysis.safeMessage}. Moving to fallback model.`,
           );
           break;
         }
 
-        const delay = calculateBackoff(attempt);
+        const delay = calculateAdaptiveBackoff(attempt, analysis.retryAfterMs);
         console.warn(
-          `REST stream transient error on ${model} (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
+          `REST stream transient rate limit on ${model} (${analysis.category}, attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -304,18 +322,18 @@ export const callGeminiStream = async (
       } catch (err) {
         lastError = err;
         if (abortSignal?.aborted) return "";
-        const isTransient = isTransientError(err);
+        const analysis = analyzeGeminiError(err);
 
-        if (!isTransient || attempt >= maxRetries) {
+        if (!analysis.isTransient || attempt >= maxRetries) {
           console.warn(
-            `OpenAI SDK stream failed on ${model} (attempt ${attempt + 1}): ${err.message}. Moving to fallback model.`,
+            `OpenAI SDK stream failed on ${model} (${analysis.category}, attempt ${attempt + 1}): ${analysis.safeMessage}. Moving to fallback model.`,
           );
           break;
         }
 
-        const delay = calculateBackoff(attempt);
+        const delay = calculateAdaptiveBackoff(attempt, analysis.retryAfterMs);
         console.warn(
-          `OpenAI SDK stream transient retry on ${model} (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
+          `OpenAI SDK stream transient retry on ${model} (${analysis.category}, attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms...`,
         );
         await new Promise((resolve) => setTimeout(resolve, delay));
       }
@@ -328,57 +346,56 @@ export const callGeminiStream = async (
 /**
  * Handle AI provider errors with clean, safe HTTP status codes and messages
  */
+/**
+ * Handle AI provider errors with clean, safe HTTP status codes and messages
+ */
 const handleAiErrorResponse = (err, res, actionName = "generate content") => {
-  console.error(`AI Error during ${actionName}:`, err.message || err);
+  const analysis = analyzeGeminiError(err);
+  console.error(`AI Error during ${actionName} [${analysis.category}]:`, analysis.safeMessage);
 
-  const status = err.status || err.response?.status;
-  const msg = String(err.message || "");
-
-  if (
-    status === 503 ||
-    msg.includes("503") ||
-    msg.includes("UNAVAILABLE") ||
-    msg.includes("high demand")
-  ) {
-    return res.status(503).json({
-      success: false,
-      message:
-        "AI service is temporarily unavailable. Please try again shortly.",
-    });
+  if (analysis.retryAfterMs) {
+    try {
+      res.set("Retry-After", String(Math.ceil(analysis.retryAfterMs / 1000)));
+    } catch (_) {}
   }
 
-  if (
-    status === 429 ||
-    msg.includes("429") ||
-    msg.includes("RESOURCE_EXHAUSTED") ||
-    msg.includes("quota")
-  ) {
+  if (analysis.isDailyQuota) {
     return res.status(429).json({
       success: false,
-      message: "AI rate limit exceeded. Please try again shortly.",
+      errorCategory: "DAILY_QUOTA_EXHAUSTED",
+      message: "AI service quota exhausted for today. Please try again tomorrow or contact support.",
     });
   }
 
-  if (
-    status === 401 ||
-    status === 403 ||
-    msg.includes("API key not valid") ||
-    msg.includes("401")
-  ) {
+  if (analysis.category === "RATE_LIMIT_TRANSIENT" || analysis.statusCode === 429) {
+    return res.status(429).json({
+      success: false,
+      errorCategory: "RATE_LIMIT_TRANSIENT",
+      message: "AI rate limit exceeded. Please try again shortly.",
+      ...(analysis.retryAfterMs ? { retryAfterSeconds: Math.ceil(analysis.retryAfterMs / 1000) } : {}),
+    });
+  }
+
+  if (analysis.category === "MODEL_UNAVAILABLE_TRANSIENT" || analysis.statusCode === 503) {
+    return res.status(503).json({
+      success: false,
+      errorCategory: "SERVICE_UNAVAILABLE",
+      message: "AI service is temporarily unavailable. Please try again shortly.",
+    });
+  }
+
+  if (analysis.category === "AUTH_FAILURE" || analysis.statusCode === 401 || analysis.statusCode === 403) {
     return res.status(500).json({
       success: false,
-      message:
-        "AI service authentication error. Please check server configuration.",
+      errorCategory: "AUTH_FAILURE",
+      message: "AI service authentication error. Please check server configuration.",
     });
   }
 
-  if (
-    status === 400 ||
-    msg.includes("400") ||
-    msg.includes("INVALID_ARGUMENT")
-  ) {
+  if (analysis.category === "BAD_REQUEST" || analysis.statusCode === 400) {
     return res.status(400).json({
       success: false,
+      errorCategory: "BAD_REQUEST",
       message: "Invalid AI generation request format.",
     });
   }
@@ -1322,9 +1339,16 @@ export const removeImageObject = async (req, res) => {
  */
 export const resumeReview = async (req, res) => {
   let tempFilePath = null;
+  const corrId = req.headers?.["x-correlation-id"] || generateCorrelationId();
+  const logger = createResumeLogger(corrId);
+
   try {
+    // Stage 1: Request Receipt & Correlation Initialization
+    logger.start(1, "Request Receipt & Correlation Initialization");
+
     // 1. Premium Plan Verification
     if (!req.isPremium) {
+      logger.fail(1, "Request Receipt & Correlation Initialization", { reason: "Non-premium access denied" });
       return res.status(403).json({
         success: false,
         message: "This feature is available only on the Premium plan.",
@@ -1333,6 +1357,7 @@ export const resumeReview = async (req, res) => {
 
     // 2. File Validation
     if (!req.file) {
+      logger.fail(1, "Request Receipt & Correlation Initialization", { reason: "Missing resume file" });
       return res.status(400).json({
         success: false,
         message: "Please upload a resume file (PDF, DOC, or DOCX).",
@@ -1344,6 +1369,7 @@ export const resumeReview = async (req, res) => {
     // 3. File Size Validation (Max 5 MB)
     const MAX_RESUME_SIZE = 5 * 1024 * 1024;
     if (req.file.size > MAX_RESUME_SIZE) {
+      logger.fail(1, "Request Receipt & Correlation Initialization", { reason: "File exceeds 5MB limit" });
       return res.status(400).json({
         success: false,
         message:
@@ -1351,9 +1377,21 @@ export const resumeReview = async (req, res) => {
       });
     }
 
-    // 4. Text Extraction
+    const ext = path
+      .extname(
+        req.file.originalname || req.file.filename || req.file.path || "",
+      )
+      .toLowerCase();
+
+    logger.success(1, "Request Receipt & Correlation Initialization", {
+      fileSize: req.file.size,
+      fileExt: ext,
+      hasJobDescription: Boolean(req.body?.jobDescription),
+    });
+
+    // Stage 2: Resume Extraction
+    logger.start(2, "Resume Extraction");
     let extractedText = "";
-    const ext = path.extname(req.file.originalname).toLowerCase();
 
     if (ext === ".pdf") {
       try {
@@ -1374,11 +1412,21 @@ export const resumeReview = async (req, res) => {
       } catch (docErr) {
         console.warn("DOC/DOCX extraction error:", docErr.message);
       }
+    } else if (ext === ".txt") {
+      try {
+        extractedText = await fs.promises.readFile(tempFilePath, "utf-8");
+      } catch (txtErr) {
+        console.warn("TXT extraction error:", txtErr.message);
+      }
     }
 
-    const cleanedText = extractedText.replace(/\s+/g, " ").trim();
+    const cleanedText = extractedText
+      .replace(/[^\S\r\n]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
 
     if (!cleanedText || cleanedText.length < 50) {
+      logger.fail(2, "Resume Extraction", { reason: "Insufficient text extracted", charCount: cleanedText.length });
       return res.status(400).json({
         success: false,
         message:
@@ -1386,36 +1434,96 @@ export const resumeReview = async (req, res) => {
       });
     }
 
-    // 5. Call Gemini for Structured JSON Resume Review validated with Zod & prompt security
-    const validatedAnalysis = await analyzeResumeTextWithAi(cleanedText, {
-      userId: req.userId,
-      ip: req.ip || "unknown",
+    logger.success(2, "Resume Extraction", {
+      charCount: cleanedText.length,
+      fileExt: ext,
     });
 
-    // 6. Format Markdown for UI display and backward compatibility
-    const reviewMarkdown = formatResumeAnalysisMarkdown(validatedAnalysis);
+    const resumeId = (
+      req.file?.filename ||
+      req.file?.originalname ||
+      "resume_upload"
+    ).replace(/[^a-zA-Z0-9._-]/g, "_");
 
-    // 7. Save to Database
-    const savedCreation = await Creation.create({
+    // Execute complete RAG & ATS pipeline (Phase 2 — Steps 3–11)
+    const pipelineResult = await executeResumeReviewPipeline({
+      resumeText: cleanedText,
+      resumeId,
       userId: req.userId,
-      userName: req.userName || "QuickAI Creator",
-      prompt: `Resume Review: ${req.file.originalname}`,
-      content: reviewMarkdown,
-      type: "resume-review",
-      publish: false,
-      likes: [],
+      jobDescription: req.body?.jobDescription,
+      ip: req.ip || "unknown",
+      logger,
+    });
+
+    const {
+      structuredResume,
+      resumeChunks,
+      chunkCount,
+      storedChunksCount,
+      jobDescriptionProcessed,
+      retrievedChunks,
+      retrievedChunksCount,
+      validatedAnalysis,
+      reviewMarkdown,
+    } = pipelineResult;
+
+    // Persist to Creation collection
+    let savedCreation = null;
+    try {
+      if (Creation.db?.readyState === 1) {
+        savedCreation = await Creation.create({
+          userId: req.userId,
+          userName: req.userName || "QuickAI Creator",
+          prompt: `Resume Review: ${req.file?.originalname || "Uploaded Resume"}`,
+          content: reviewMarkdown,
+          type: "resume-review",
+          publish: false,
+          likes: [],
+        });
+      }
+    } catch (saveErr) {
+      console.warn("Failed to persist creation record:", saveErr.message);
+    }
+
+    // Stage 13: Response Delivery
+    logger.start(13, "Response Delivery");
+    logger.success(13, "Response Delivery", {
+      statusCode: 200,
+      totalDurationMs: logger.getTotalDuration(),
     });
 
     return res.status(200).json({
       success: true,
+      correlationId: corrId,
       message: "Resume reviewed successfully",
       review: reviewMarkdown,
       content: reviewMarkdown,
       analysis: validatedAnalysis,
+      structuredResume,
+      resumeChunks,
+      chunkCount,
+      storedChunksCount,
+      jobDescriptionProcessed,
+      retrievedChunks,
+      retrievedChunksCount,
+      atsScore: validatedAnalysis.atsScore,
+      matchedSkills:
+        validatedAnalysis.matchedSkills || validatedAnalysis.topKeywords || [],
+      missingSkills:
+        validatedAnalysis.missingSkills ||
+        validatedAnalysis.missingKeywords ||
+        [],
+      strengths: validatedAnalysis.strengths || [],
+      weaknesses: validatedAnalysis.weaknesses || [],
+      improvements:
+        validatedAnalysis.improvements ||
+        validatedAnalysis.recommendations ||
+        [],
       creation: savedCreation,
       plan: req.plan,
     });
   } catch (error) {
+    logger.fail(logger.getCurrentStage(), error);
     return handleAiErrorResponse(error, res, "review resume");
   } finally {
     // Cleanup temporary uploaded file asynchronously

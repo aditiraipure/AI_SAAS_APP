@@ -60,8 +60,9 @@ app.get("/", (req, res) => {
 // AI Routes
 app.use("/api/ai", aiRouter);
 
-// Resume Builder Routes
+// Resume Builder & Review Routes
 app.use("/api/resumes", resumeRouter);
+app.use("/api/resume", resumeRouter);
 
 // User & Creations Routes
 app.use("/api/user", userRouter);

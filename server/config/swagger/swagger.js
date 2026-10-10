@@ -1,5 +1,11 @@
+import path from "path";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const serverRoot = path.resolve(__dirname, "../../");
 
 const port = process.env.PORT || 5000;
 
@@ -200,7 +206,17 @@ const swaggerOptions = {
       },
     ],
   },
-  apis: ["./routes/*.js", "./routes/**/*.js", "./server.js"],
+  apis: [
+    path.join(serverRoot, "routes/*.js"),
+    path.join(serverRoot, "routes/**/*.js"),
+    path.join(serverRoot, "server.js"),
+    "./routes/*.js",
+    "./routes/**/*.js",
+    "./server/routes/*.js",
+    "./server/routes/**/*.js",
+    "./server.js",
+    "./server/server.js",
+  ],
 };
 
 export const swaggerSpec = swaggerJsdoc(swaggerOptions);

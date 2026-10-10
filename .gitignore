@@ -5,3 +5,11 @@ dist/
 build/
 coverage/
 
+# Tests
+tests/
+server/tests/
+*.test.js
+
+# Temporary folders & uploads
+scratch/
+uploads/
